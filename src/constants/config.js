@@ -50,15 +50,20 @@ export const configInit = async () => {
       return;
     }
 
+    let loadedCount = 0;
     response.Parameters.forEach((param) => {
       const name = param.Name.split("/").pop();
 
       if (name in config) {
         config[name] = param.Value;
+        console.log(`   ✅ Loaded: ${name}`);
+        loadedCount++;
+      } else {
+        console.log(`   ⚠️ Skipped: ${name} (not in config)`);
       }
     });
 
-    console.log("✅ AWS Secrets loaded successfully.");
+    console.log(`\n✅ AWS Secrets loaded successfully (${loadedCount} parameters)`);
   } catch (error) {
     console.error("❌ Failed to load secrets from AWS:", error);
     process.exit(1); // Crash hard if secrets fail
