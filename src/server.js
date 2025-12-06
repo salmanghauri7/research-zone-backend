@@ -1,5 +1,5 @@
 import express from "express";
-import { config } from "./constants/config.js";
+import { config, configInit } from "./constants/config.js";
 import routes from "./routes/index.js";
 import connectDb from "./config/dbConfig.js";
 import { globalError } from "./utils/apiError.js";
@@ -27,14 +27,15 @@ const PORT = config.PORT || 5000;
 
 const startServer = async () => {
   try {
-    // 2. Connect to the database FIRST
+    // load the config.js for development or production
+
+    await configInit();
+
     await connectDb();
 
     // 3. Start the server ONLY AFTER the DB is connected
     app.listen(PORT, () => {
-      console.log(
-        `✅ Server is connected http://localhost:${PORT}`
-      );
+      console.log(`✅ Server is connected http://localhost:${PORT}`);
     });
   } catch (error) {
     // 4. If the database connection fails, log it and exit

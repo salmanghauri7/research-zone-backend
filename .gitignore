@@ -16,6 +16,8 @@ yarn-debug.log*
 /dist
 /build
 
+upload-env.ps1
+
 # ------------------------------------
 # IDE and OS Files (Standard)
 # ------------------------------------
