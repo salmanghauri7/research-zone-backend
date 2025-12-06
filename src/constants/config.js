@@ -37,9 +37,14 @@ export const configInit = async () => {
   });
 
   try {
-    const response = client.send(command);
+    const response = await client.send(command);
 
-    response.Parameter.forEach((param) => {
+    if (!response.Parameters || response.Parameters.length === 0) {
+      console.warn("⚠️ No parameters found in AWS at this path!");
+      return;
+    }
+
+    response.Parameters.forEach((param) => {
       const name = param.Name.split("/").pop();
 
       if (name in config) {
