@@ -39,7 +39,13 @@ export const configInit = async () => {
   try {
     const response = await client.send(command);
 
-    if (!response.Parameters || response.Parameters.length === 0) {
+    if (!response || !response.Parameters) {
+      console.warn("⚠️ Invalid response from AWS Parameter Store!");
+      console.warn("Response:", JSON.stringify(response, null, 2));
+      return;
+    }
+
+    if (response.Parameters.length === 0) {
       console.warn("⚠️ No parameters found in AWS at this path!");
       return;
     }
@@ -50,9 +56,9 @@ export const configInit = async () => {
       if (name in config) {
         config[name] = param.Value;
       }
-
-      console.log("✅ AWS Secrets loaded successfully.");
     });
+
+    console.log("✅ AWS Secrets loaded successfully.");
   } catch (error) {
     console.error("❌ Failed to load secrets from AWS:", error);
     process.exit(1); // Crash hard if secrets fail
