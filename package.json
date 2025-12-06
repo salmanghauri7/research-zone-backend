@@ -7,7 +7,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "deploy": "ssh -i D:/security-aws/research-zone.pem ubuntu@ec2-13-205-7-218.ap-south-1.compute.amazonaws.com 'cd research-zone-backend && git pull && npm install && pm2 restart backend'"
   },
   "dependencies": {
     "@aws-sdk/client-ssm": "^3.943.0",
