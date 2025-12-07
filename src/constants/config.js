@@ -63,7 +63,9 @@ export const configInit = async () => {
       }
     });
 
-    console.log(`\n✅ AWS Secrets loaded successfully (${loadedCount} parameters)`);
+    console.log(
+      `\n✅ AWS Secrets loaded successfully (${loadedCount} parameters)`
+    );
   } catch (error) {
     console.error("❌ Failed to load secrets from AWS:", error);
     process.exit(1); // Crash hard if secrets fail

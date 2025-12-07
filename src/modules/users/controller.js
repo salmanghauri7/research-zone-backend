@@ -148,44 +148,47 @@ export default class userController {
 
   static async loginGoogle(req, res) {
     try {
-      console.log('🔐 Google Login Request Received');
+      console.log("🔐 Google Login Request Received");
       const { code } = req.body;
 
       if (!code) {
-        console.error('❌ No authorization code provided');
+        console.error("❌ No authorization code provided");
         throw new ApiError(errorMessages.USER.AUTH_NOT_PROVIDED, 400);
       }
 
-      console.log('🔄 Exchanging code for tokens...');
+      console.log("🔄 Exchanging code for tokens...");
       const { tokens } = await client.getToken(code);
-      console.log('✅ Tokens received from Google');
+      console.log("✅ Tokens received from Google");
 
       const idToken = tokens.id_token;
 
       if (!idToken) {
-        console.error('❌ No ID token in response');
+        console.error("❌ No ID token in response");
         throw new ApiError(errorMessages.USER.ID_TOKEN_GOOGLE_FAILED, 500);
       }
 
-      console.log('🔍 Verifying ID token...');
+      console.log("🔍 Verifying ID token...");
       const ticket = await client.verifyIdToken({
         idToken: idToken,
         audience: config.GOOGLE_CLIENT_ID,
       });
-      console.log('✅ ID token verified');
+      console.log("✅ ID token verified");
 
       if (!ticket.getPayload()) {
         throw new ApiError(errorMessages.USER.TICKET_FAILED, 400);
       }
 
       const payload = ticket.getPayload();
-      console.log('👤 User payload:', { email: payload.email, sub: payload.sub });
+      console.log("👤 User payload:", {
+        email: payload.email,
+        sub: payload.sub,
+      });
       const { email, sub, given_name, family_name, username, picture } =
         payload;
-      
-      console.log('💾 Processing user in database...');
+
+      console.log("💾 Processing user in database...");
       const { user, newUser } = await userDb.loginGoogleService({ ...payload });
-      console.log(`✅ User ${newUser ? 'created' : 'found'} - ID: ${user._id}`);
+      console.log(`✅ User ${newUser ? "created" : "found"} - ID: ${user._id}`);
 
       const accessToken = await userDb.generateAccessToken(user);
 
@@ -205,8 +208,8 @@ export default class userController {
         },
       });
     } catch (error) {
-      console.error('❌ Google Login Error:', error.message);
-      console.error('Stack:', error.stack);
+      console.error("❌ Google Login Error:", error.message);
+      console.error("Stack:", error.stack);
       return apiResponse.error(
         res,
         error.message || errorMessages.USER.SIGNUP_GOOGLE_FAILED,
