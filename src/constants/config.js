@@ -66,6 +66,19 @@ export const configInit = async () => {
     console.log(
       `\n✅ AWS Secrets loaded successfully (${loadedCount} parameters)`
     );
+
+    // Debug: Check if critical SMTP values are loaded
+    console.log("\n🔍 SMTP Configuration Check:");
+    console.log(
+      `   SMTP_USER: ${
+        config.SMTP_USER ? `✅ Set ${config.SMTP_USER} ` : "❌ Missing"
+      }`
+    );
+    console.log(
+      `   SMTP_PASS: ${
+        config.SMTP_PASS ? `✅ Set ${config.SMTP_PASS} ` : "❌ Missing"
+      }`
+    );
   } catch (error) {
     console.error("❌ Failed to load secrets from AWS:", error);
     process.exit(1); // Crash hard if secrets fail
