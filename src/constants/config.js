@@ -29,39 +29,42 @@ export const configInit = async () => {
   console.log(
     "☁️ Running in Production Mode (Fetching from AWS Parameter Store...)"
   );
+  
   const client = new SSMClient({ region: "ap-south-1" });
-  const command = new GetParametersByPathCommand({
-    Path: "/research-zone-backend/prod/", // Your Prefix
-    WithDecryption: true,
-    Recursive: true,
-  });
+  let nextToken; // Store the pagination token
+  let loadedCount = 0;
 
   try {
-    const response = await client.send(command);
+    // Loop until there are no more pages
+    do {
+      const command = new GetParametersByPathCommand({
+        Path: "/research-zone-backend/prod/",
+        WithDecryption: true,
+        Recursive: true,
+        NextToken: nextToken, // Pass the token from the previous loop (undefined on first run)
+        MaxResults: 10 // Explicitly stating the max (optional, but good for clarity)
+      });
 
-    if (!response || !response.Parameters) {
-      console.warn("⚠️ Invalid response from AWS Parameter Store!");
-      console.warn("Response:", JSON.stringify(response, null, 2));
-      return;
-    }
+      const response = await client.send(command);
 
-    if (response.Parameters.length === 0) {
-      console.warn("⚠️ No parameters found in AWS at this path!");
-      return;
-    }
+      if (response.Parameters && response.Parameters.length > 0) {
+        response.Parameters.forEach((param) => {
+          const name = param.Name.split("/").pop();
 
-    let loadedCount = 0;
-    response.Parameters.forEach((param) => {
-      const name = param.Name.split("/").pop();
-
-      if (name in config) {
-        config[name] = param.Value;
-        console.log(`   ✅ Loaded: ${name}`);
-        loadedCount++;
-      } else {
-        console.log(`   ⚠️ Skipped: ${name} (not in config)`);
+          if (name in config) {
+            config[name] = param.Value;
+            console.log(`   ✅ Loaded: ${name}`);
+            loadedCount++;
+          } else {
+            console.log(`   ⚠️ Skipped: ${name} (not in config)`);
+          }
+        });
       }
-    });
+
+      // Update nextToken for the next iteration
+      nextToken = response.NextToken;
+
+    } while (nextToken); // Continue only if a NextToken exists
 
     console.log(
       `\n✅ AWS Secrets loaded successfully (${loadedCount} parameters)`
@@ -76,11 +79,11 @@ export const configInit = async () => {
     );
     console.log(
       `   SMTP_PASS: ${
-        config.SMTP_PASS ? `✅ Set ${config.SMTP_PASS} ` : "❌ Missing"
+        config.SMTP_PASS ? `✅ Set (Hidden) ` : "❌ Missing"
       }`
     );
   } catch (error) {
     console.error("❌ Failed to load secrets from AWS:", error);
-    process.exit(1); // Crash hard if secrets fail
+    process.exit(1);
   }
 };

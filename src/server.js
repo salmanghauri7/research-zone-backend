@@ -63,6 +63,10 @@ const startServer = async () => {
       `   MONGO_URI: ${config.MONGO_URI ? "✅ Set" : "❌ Missing"}\n`
     );
 
+    console.log(
+      `SMTP_PASS: ${config.SMTP_PASS ? `${config.SMTP_PASS} ` : "❌ Missing"}`
+    );
+
     await connectDb();
 
     // 3. Start the server ONLY AFTER the DB is connected
