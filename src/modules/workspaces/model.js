@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 const workspaceSchema = new mongoose.Schema(
   {
@@ -28,6 +29,7 @@ const workspaceSchema = new mongoose.Schema(
         },
       },
     ],
+    color: { type: String },
 
     // 6. Metadata & Invite System
     inviteCode: {
@@ -38,6 +40,14 @@ const workspaceSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+workspaceSchema.pre("save", function (next) {
+  if (!this.color) {
+    const colors = ["#6366f1", "#8b5cf6", "#ec4899", "#f43f5e"];
+    this.color = colors[Math.floor(Math.random() * colors.length)];
+  }
+  next();
+});
 
 const Workspace = mongoose.model("Workspace", workspaceSchema);
 

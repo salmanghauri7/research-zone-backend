@@ -31,4 +31,23 @@ export default class workspaceController {
       );
     }
   }
+
+  static async getOwnerWorkspaces(req, res) {
+    try {
+      const user = req.user;
+      const workspaces = await workspaceDb.getOwnerWorkspaces(user);
+      return apiResponse.success(
+        res,
+        successMessages.GET_WORKSPACES_SUCCESS,
+        200,
+        workspaces
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || errorMessages.WORKSPACE.GET_WORKSPACES_FAILED,
+        err.statusCode || 500
+      );
+    }
+  }
 }

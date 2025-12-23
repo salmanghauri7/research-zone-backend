@@ -24,6 +24,7 @@ export const errorMessages = {
   WORKSPACE: {
     TITLE_NOT_FOUND: "Title is not found",
     CREATE_FAILED: "Failed to create Workspace",
+    GET_WORKSPACES_FAILED: "Failed to get the workspaces",
   },
 };
 export const successMessages = {
@@ -37,5 +38,6 @@ export const successMessages = {
   },
   WORKSPACE: {
     CREATE_SUCCESS: "Workspace created successfully",
+    GET_WORKSPACES_SUCCESS: "Workspaces fetched successfully",
   },
 };

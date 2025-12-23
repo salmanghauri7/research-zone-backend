@@ -40,8 +40,11 @@ export default class BaseRepository {
    * @param {string | object | Array<string | object>} [populate=""] - Fields to populate.
    * @returns {Promise<Document[]>}
    */
-  async find(query = {}, populate = "") {
+  async find(query = {}, populate = "", select = "") {
     let queryBuilder = this.model.find(query);
+    if (select) {
+      queryBuilder = queryBuilder.select(select);
+    }
     if (Array.isArray(populate)) {
       populate.forEach((p) => (queryBuilder = queryBuilder.populate(p)));
     } else if (populate) {
@@ -122,5 +125,14 @@ export default class BaseRepository {
     if (populate) queryBuilder = queryBuilder.populate(populate);
 
     return queryBuilder;
+  }
+
+  /**
+   * Performs aggregation operations.
+   * @param {Array} pipeline - The aggregation pipeline stages.
+   * @returns {Promise<any[]>}
+   */
+  async aggregate(pipeline) {
+    return this.model.aggregate(pipeline);
   }
 }

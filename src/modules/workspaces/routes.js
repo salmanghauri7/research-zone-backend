@@ -5,5 +5,6 @@ import workspaceController from "./controller.js";
 const router = express.Router();
 
 router.post("/create", checkAccessToken, workspaceController.createWorkspace);
+router.get("/owner", checkAccessToken, workspaceController.getOwnerWorkspaces);
 
 export default router;
