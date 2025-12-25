@@ -63,9 +63,7 @@ const startServer = async () => {
       `   MONGO_URI: ${config.MONGO_URI ? "✅ Set" : "❌ Missing"}\n`
     );
 
-    console.log(
-      `SMTP_PASS: ${config.SMTP_PASS ? `${config.SMTP_PASS} ` : "❌ Missing"}`
-    );
+    console.log(`SMTP_PASS: ${config.SMTP_PASS ? ` Set ` : "❌ Missing"}`);
 
     await connectDb();
 

@@ -176,7 +176,7 @@ export default class userservices extends BaseRepository {
       authProviders: user.authProviders,
     };
 
-    const accessToken = generateJWT(payload, { expiresIn: "15m" });
+    const accessToken = generateJWT(payload, { expiresIn: "1m" });
     return accessToken;
   }
 
@@ -191,7 +191,7 @@ export default class userservices extends BaseRepository {
   }
 
   async getUserFromToken(token) {
-    const user = this.findOne({ token });
+    const user = await this.findOne({ refreshToken: token });
     if (!user) {
       throw new ApiError(errorMessages.USER.USER_NOT_EXIST, 400);
     }
