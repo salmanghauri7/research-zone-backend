@@ -14,6 +14,7 @@ const workspaceSchema = new mongoose.Schema(
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
       required: true,
     },
     members: [
@@ -37,7 +38,12 @@ const workspaceSchema = new mongoose.Schema(
       unique: true,
       default: () => crypto.randomUUID(),
     },
+    isPersonalWorkspace: {
+      type: Boolean,
+      index: true,
+    },
   },
+
   { timestamps: true }
 );
 

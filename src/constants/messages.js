@@ -25,6 +25,7 @@ export const errorMessages = {
     TITLE_NOT_FOUND: "Title is not found",
     CREATE_FAILED: "Failed to create Workspace",
     GET_WORKSPACES_FAILED: "Failed to get the workspaces",
+    NOT_FOUND: "Workspace not found",
   },
 };
 export const successMessages = {

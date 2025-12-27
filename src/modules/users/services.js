@@ -176,7 +176,7 @@ export default class userservices extends BaseRepository {
       authProviders: user.authProviders,
     };
 
-    const accessToken = generateJWT(payload, { expiresIn: "1m" });
+    const accessToken = generateJWT(payload, { expiresIn: "30m" });
     return accessToken;
   }
 

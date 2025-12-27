@@ -10,7 +10,7 @@
     "dev": "nodemon src/server.js",
     "docker:build": "docker build -t salmanghauri/node-backend:latest .",
     "docker:push": "docker push salmanghauri/node-backend:latest",
-    "deploy": "npm run docker:build && npm run docker:push && ssh -i D:/security-aws/research-zone.pem ubuntu@ec2-13-205-7-218.ap-south-1.compute.amazonaws.com \"docker pull salmanghauri/node-backend:latest && docker stop backend-container || true && docker rm backend-container || true && docker run -d --name backend-container -p 5000:5000 -e AWS_REGION=ap-south-1 yourusername/node-backend:latest\""
+    "deploy": "npm run docker:build && npm run docker:push && ssh -i D:/security-aws/research-zone.pem ubuntu@ec2-13-205-7-218.ap-south-1.compute.amazonaws.com \"docker pull salmanghauri/node-backend:latest && docker stop backend-container || true && docker rm backend-container || true && docker run -d --name backend-container -p 5000:5000 -e AWS_REGION=ap-south-1 salmanghauri/node-backend:latest\""
   },
   "dependencies": {
     "@aws-sdk/client-ssm": "^3.943.0",

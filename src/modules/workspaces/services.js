@@ -20,7 +20,12 @@ export default class workspaceServices extends BaseRepository {
 
   async getOwnerWorkspaces(user) {
     const pipeline = [
-      { $match: { owner: new mongoose.Types.ObjectId(user.id) } },
+      {
+        $match: {
+          owner: new mongoose.Types.ObjectId(user.id),
+          isPersonalWorkspace: false,
+        },
+      },
       {
         $project: {
           title: 1,
