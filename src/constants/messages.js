@@ -26,6 +26,12 @@ export const errorMessages = {
     CREATE_FAILED: "Failed to create Workspace",
     GET_WORKSPACES_FAILED: "Failed to get the workspaces",
     NOT_FOUND: "Workspace not found",
+    NOT_OWNER: "You are not the owner of this workspace",
+    ALREADY_MEMBER: "User is already a member of this workspace",
+    EMAIL_NOT_PROVIDED: "Email is required",
+    WORKSPACE_ID_NOT_PROVIDED: "Workspace ID is required",
+    INVITATION_EXISTS: "An active invitation already exists for this email",
+    INVITATION_FAILED: "Failed to send invitation",
   },
 };
 export const successMessages = {
@@ -40,5 +46,6 @@ export const successMessages = {
   WORKSPACE: {
     CREATE_SUCCESS: "Workspace created successfully",
     GET_WORKSPACES_SUCCESS: "Workspaces fetched successfully",
+    INVITATION_SENT: "Invitation sent successfully",
   },
 };

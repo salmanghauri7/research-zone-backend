@@ -51,5 +51,40 @@ export default class workspaceController {
     }
   }
 
+  static async inviteUser(req, res) {
+    try {
+      const { email } = req.body;
+      const { workspaceId } = req.params;
+      const user = req.user;
+
+      if (!email) {
+        throw new ApiError(errorMessages.WORKSPACE.EMAIL_NOT_PROVIDED, 400);
+      }
+
+      if (!workspaceId) {
+        throw new ApiError(errorMessages.WORKSPACE.WORKSPACE_ID_NOT_PROVIDED, 400);
+      }
+
+      const invitation = await workspaceDb.inviteUserToWorkspace({
+        email,
+        workspaceId,
+        inviter: user,
+      });
+
+      return apiResponse.success(
+        res,
+        successMessages.WORKSPACE.INVITATION_SENT,
+        200,
+        invitation
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || errorMessages.WORKSPACE.INVITATION_FAILED,
+        err.statusCode || 500
+      );
+    }
+  }
+
   
 }

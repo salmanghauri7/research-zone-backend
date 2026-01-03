@@ -6,5 +6,10 @@ const router = express.Router();
 
 router.post("/create", checkAccessToken, workspaceController.createWorkspace);
 router.get("/owner", checkAccessToken, workspaceController.getOwnerWorkspaces);
+router.post(
+  "/:workspaceId/invite",
+  checkAccessToken,
+  workspaceController.inviteUser
+);
 
 export default router;

@@ -12,6 +12,6 @@ router.post("/login", formValidation(loginSchema), userController.login);
 router.get("/resendOtp/:token", userController.resendOtp);
 router.get("/refresh", userController.refresh);
 router.post("/google-login", userController.loginGoogle);
-router.post('/checkUsernameAvailability', userController.checkUsername)
-router.post("/addUsername", checkAccessToken, userController.addUsername)
+router.post("/checkUsernameAvailability", userController.checkUsername);
+router.post("/addUsername", checkAccessToken, userController.addUsername);
 export default router;
