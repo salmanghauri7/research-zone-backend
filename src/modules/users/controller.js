@@ -56,11 +56,6 @@ export default class userController {
       await userDb.sendCookie(res, refreshToken, 7 * 24 * 60 * 60 * 1000);
 
       // Create personal workspace for the user
-      const personalWorkspace = await workspaceDb.create({
-        title: "personal workspace",
-        owner: user._id,
-        isPersonalWorkspace: true,
-      });
 
       return apiResponse.success(res, successMessages.USER.OTP_VERIFIED, 200, {
         accessToken: accessToken,
@@ -69,10 +64,6 @@ export default class userController {
           firstName: user.firstName,
           username: user.username,
           email: user.email,
-        },
-        workspace: {
-          id: personalWorkspace._id,
-          title: personalWorkspace.title,
         },
       });
     } catch (err) {
@@ -108,11 +99,6 @@ export default class userController {
       // Verify credentials first and get user
       const user = await userDb.verifyCredentials(email, username, password);
 
-      const workspace = await workspaceDb.findOne({
-        owner: user._id,
-        isPersonalWorkspace: true,
-      });
-
       // Generate both tokens
       const [refreshToken, accessToken] = await Promise.all([
         userDb.updateRefreshToken(user),
@@ -129,10 +115,6 @@ export default class userController {
           firstName: user.firstName,
           username: user.username,
           email: user.email,
-        },
-        workspace: {
-          id: workspace._id,
-          title: workspace.title,
         },
       });
     } catch (err) {

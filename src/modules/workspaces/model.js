@@ -38,10 +38,7 @@ const workspaceSchema = new mongoose.Schema(
       unique: true,
       default: () => crypto.randomUUID(),
     },
-    isPersonalWorkspace: {
-      type: Boolean,
-      index: true,
-    },
+   
   },
 
   { timestamps: true }

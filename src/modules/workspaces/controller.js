@@ -51,33 +51,5 @@ export default class workspaceController {
     }
   }
 
-  static async getPersonalWorkspaces(req, res) {
-    try {
-      const user = req.user;
-      const workspace = await workspaceDb.findOne({
-        owner: user.id,
-        isPersonalWorkspace: true,
-      });
-      if (!workspace) {
-        throw new ApiError(errorMessages.WORKSPACE.NOT_FOUND, 404);
-      }
-      return apiResponse.success(
-        res,
-        successMessages.GET_WORKSPACES_SUCCESS,
-        200,
-        {
-          workspace: {
-            id: workspace.id,
-            title: workspace.title,
-          },
-        }
-      );
-    } catch (err) {
-      return apiResponse.error(
-        res,
-        err.message || errorMessages.WORKSPACE.GET_WORKSPACES_FAILED,
-        err.statusCode || 500
-      );
-    }
-  }
+  
 }
