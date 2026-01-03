@@ -62,7 +62,10 @@ export default class workspaceController {
       }
 
       if (!workspaceId) {
-        throw new ApiError(errorMessages.WORKSPACE.WORKSPACE_ID_NOT_PROVIDED, 400);
+        throw new ApiError(
+          errorMessages.WORKSPACE.WORKSPACE_ID_NOT_PROVIDED,
+          400
+        );
       }
 
       const invitation = await workspaceDb.inviteUserToWorkspace({
@@ -85,6 +88,4 @@ export default class workspaceController {
       );
     }
   }
-
-  
 }

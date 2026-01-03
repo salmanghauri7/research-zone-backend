@@ -8,7 +8,9 @@
 export function invitationTemplate(workspaceName, inviterName, token) {
   const primaryColor = "#007bff";
   const borderColor = "#e9ecef";
-  const acceptUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/accept-invitation/${token}`;
+  const acceptUrl = `${
+    process.env.FRONTEND_URL || "http://localhost:3000"
+  }/accept-invitation/${token}`;
 
   return `
 <!DOCTYPE html>
