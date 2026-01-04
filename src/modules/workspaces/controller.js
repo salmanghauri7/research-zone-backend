@@ -32,7 +32,7 @@ export default class workspaceController {
     }
   }
 
-  static async  getOwnerWorkspaces(req, res) {
+  static async getOwnerWorkspaces(req, res) {
     try {
       const user = req.user;
       const workspaces = await workspaceDb.getOwnerWorkspaces(user);

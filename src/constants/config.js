@@ -14,6 +14,7 @@ export const config = {
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
   NODE_ENV: process.env.NODE_ENV,
+  FRONTEND_URL:process.env.FRONTEND_URL
 };
 
 export const constants = {
