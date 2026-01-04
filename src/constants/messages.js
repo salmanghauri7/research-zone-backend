@@ -38,6 +38,7 @@ export const errorMessages = {
     TOKEN_NOT_PROVIDED: "Invitation token is required",
     TOKEN_VERIFICATION_FAILED: "Failed to verify invitation token",
     ACCEPT_INVITATION_FAILED: "Failed to accept invitation",
+    TOKEN_NOT_VERIFIED: "Token is not verified",
   },
 };
 export const successMessages = {

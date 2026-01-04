@@ -49,6 +49,41 @@ export default class workspaceServices extends BaseRepository {
     }));
   }
 
+  async getAllWorkspaces(user) {
+    const userId = new mongoose.Types.ObjectId(user.id);
+
+    const pipeline = [
+      {
+        $match: {
+          $or: [{ owner: userId }, { "members.user": userId }],
+        },
+      },
+      {
+        $project: {
+          title: 1,
+          owner: 1,
+          createdAt: 1,
+          members: { $size: "$members" },
+          color: 1,
+          isOwner: {
+            $eq: ["$owner", userId],
+          },
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+    ];
+
+    let workspaces = await this.aggregate(pipeline);
+    return workspaces.map((ws) => ({
+      _id: ws._id,
+      title: ws.title,
+      isOwner: ws.isOwner,
+      color: ws.color,
+    }));
+  }
+
   async inviteUserToWorkspace({ email, workspaceId, inviter }) {
     // Check if workspace exists and user is owner
     const workspace = await this.findById(workspaceId);
@@ -136,7 +171,7 @@ export default class workspaceServices extends BaseRepository {
 
     // Mark invitation as expired (used)
     await WorkspaceInvitation.findByIdAndUpdate(invitation._id, {
-      status: "expired",
+      status: "verified",
     });
 
     return {
@@ -156,8 +191,8 @@ export default class workspaceServices extends BaseRepository {
     }
 
     // Check if token is already used
-    if (invitation.status === "accepted") {
-      throw new ApiError(errorMessages.WORKSPACE.TOKEN_ALREADY_USED, 400);
+    if (invitation.status !== "verified") {
+      throw new ApiError(errorMessages.WORKSPACE.TOKEN_NOT_VERIFIED, 400);
     }
 
     // Check if token is expired
@@ -194,7 +229,7 @@ export default class workspaceServices extends BaseRepository {
 
     // Mark invitation as accepted
     await WorkspaceInvitation.findByIdAndUpdate(invitation._id, {
-      status: "accepted",
+      status: "expired",
     });
 
     return {

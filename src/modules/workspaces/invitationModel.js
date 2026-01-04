@@ -28,7 +28,7 @@ const workspaceInvitationSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "accepted", "expired"],
+      enum: ["pending", "verified", "expired"],
       default: "pending",
     },
     expiresAt: {

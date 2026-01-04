@@ -51,6 +51,25 @@ export default class workspaceController {
     }
   }
 
+  static async getAllWorkspaces(req, res) {
+    try {
+      const user = req.user;
+      const workspaces = await workspaceDb.getAllWorkspaces(user);
+      return apiResponse.success(
+        res,
+        successMessages.WORKSPACE.GET_WORKSPACES_SUCCESS,
+        200,
+        workspaces
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || errorMessages.WORKSPACE.GET_WORKSPACES_FAILED,
+        err.statusCode || 500
+      );
+    }
+  }
+
   static async inviteUser(req, res) {
     try {
       const { email } = req.body;
@@ -139,6 +158,4 @@ export default class workspaceController {
       );
     }
   }
-
-  
 }
