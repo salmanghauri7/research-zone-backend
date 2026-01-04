@@ -32,6 +32,12 @@ export const errorMessages = {
     WORKSPACE_ID_NOT_PROVIDED: "Workspace ID is required",
     INVITATION_EXISTS: "An active invitation already exists for this email",
     INVITATION_FAILED: "Failed to send invitation",
+    INVALID_TOKEN: "Invalid invitation token",
+    TOKEN_EXPIRED: "Invitation token has expired",
+    TOKEN_ALREADY_USED: "This invitation has already been used",
+    TOKEN_NOT_PROVIDED: "Invitation token is required",
+    TOKEN_VERIFICATION_FAILED: "Failed to verify invitation token",
+    ACCEPT_INVITATION_FAILED: "Failed to accept invitation",
   },
 };
 export const successMessages = {
@@ -47,5 +53,7 @@ export const successMessages = {
     CREATE_SUCCESS: "Workspace created successfully",
     GET_WORKSPACES_SUCCESS: "Workspaces fetched successfully",
     INVITATION_SENT: "Invitation sent successfully",
+    TOKEN_VERIFIED: "Invitation token verified successfully",
+    INVITATION_ACCEPTED: "Invitation accepted successfully",
   },
 };

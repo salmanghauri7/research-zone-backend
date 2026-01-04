@@ -19,6 +19,7 @@ export default class workspaceServices extends BaseRepository {
     const workspace = await this.create({
       title,
       owner: user.id,
+      members: [{ user: user.id }],
     });
     return workspace;
   }
@@ -99,6 +100,107 @@ export default class workspaceServices extends BaseRepository {
       invitationId: invitation._id,
       email: invitation.email,
       expiresAt: invitation.expiresAt,
+    };
+  }
+
+  async verifyInvitationToken(token) {
+    // Find invitation by token
+    const invitation = await WorkspaceInvitation.findOne({ token });
+
+    if (!invitation) {
+      throw new ApiError(errorMessages.WORKSPACE.INVALID_TOKEN, 404);
+    }
+
+    // Check if token is already used
+    if (invitation.status === "accepted") {
+      throw new ApiError(errorMessages.WORKSPACE.TOKEN_ALREADY_USED, 400);
+    }
+
+    // Check if token is expired
+    if (invitation.status === "expired" || new Date() > invitation.expiresAt) {
+      // Mark as expired if not already
+      if (invitation.status !== "expired") {
+        await WorkspaceInvitation.findByIdAndUpdate(invitation._id, {
+          status: "expired",
+        });
+      }
+      throw new ApiError(errorMessages.WORKSPACE.TOKEN_EXPIRED, 400);
+    }
+
+    // Get workspace details
+    const workspace = await this.findById(invitation.workspaceId, "owner");
+
+    if (!workspace) {
+      throw new ApiError(errorMessages.WORKSPACE.NOT_FOUND, 404);
+    }
+
+    // Mark invitation as expired (used)
+    await WorkspaceInvitation.findByIdAndUpdate(invitation._id, {
+      status: "expired",
+    });
+
+    return {
+      email: invitation.email,
+      workspaceId: workspace._id,
+      workspaceTitle: workspace.title,
+      inviterId: invitation.inviterId,
+    };
+  }
+
+  async acceptInvitation({ token, user }) {
+    // Find invitation by token
+    const invitation = await WorkspaceInvitation.findOne({ token });
+
+    if (!invitation) {
+      throw new ApiError(errorMessages.WORKSPACE.INVALID_TOKEN, 404);
+    }
+
+    // Check if token is already used
+    if (invitation.status === "accepted") {
+      throw new ApiError(errorMessages.WORKSPACE.TOKEN_ALREADY_USED, 400);
+    }
+
+    // Check if token is expired
+    if (invitation.status === "expired" || new Date() > invitation.expiresAt) {
+      // Mark as expired if not already
+      if (invitation.status !== "expired") {
+        await WorkspaceInvitation.findByIdAndUpdate(invitation._id, {
+          status: "expired",
+        });
+      }
+      throw new ApiError(errorMessages.WORKSPACE.TOKEN_EXPIRED, 400);
+    }
+
+    // Get workspace
+    const workspace = await this.findById(invitation.workspaceId);
+
+    if (!workspace) {
+      throw new ApiError(errorMessages.WORKSPACE.NOT_FOUND, 404);
+    }
+
+    // Check if user is already a member
+    const isMember = workspace.members.some(
+      (member) => member.user.toString() === user.id.toString()
+    );
+
+    if (isMember) {
+      throw new ApiError(errorMessages.WORKSPACE.ALREADY_MEMBER, 400);
+    }
+
+    // Add user to workspace members
+    await this.updateById(invitation.workspaceId, {
+      $push: { members: { user: user.id } },
+    });
+
+    // Mark invitation as accepted
+    await WorkspaceInvitation.findByIdAndUpdate(invitation._id, {
+      status: "accepted",
+    });
+
+    return {
+      workspaceId: workspace._id,
+      workspaceTitle: workspace.title,
+      message: "Successfully joined the workspace",
     };
   }
 }

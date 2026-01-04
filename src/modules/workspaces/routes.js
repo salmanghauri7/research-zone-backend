@@ -11,5 +11,11 @@ router.post(
   checkAccessToken,
   workspaceController.inviteUser
 );
+router.post("/verify-invitation", workspaceController.verifyInvitation);
+router.post(
+  "/accept-invitation",
+  checkAccessToken,
+  workspaceController.acceptInvitation
+);
 
 export default router;

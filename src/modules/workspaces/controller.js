@@ -32,7 +32,7 @@ export default class workspaceController {
     }
   }
 
-  static async getOwnerWorkspaces(req, res) {
+  static async  getOwnerWorkspaces(req, res) {
     try {
       const user = req.user;
       const workspaces = await workspaceDb.getOwnerWorkspaces(user);
@@ -88,4 +88,57 @@ export default class workspaceController {
       );
     }
   }
+
+  static async verifyInvitation(req, res) {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        throw new ApiError(errorMessages.WORKSPACE.TOKEN_NOT_PROVIDED, 400);
+      }
+
+      const invitation = await workspaceDb.verifyInvitationToken(token);
+
+      return apiResponse.success(
+        res,
+        successMessages.WORKSPACE.TOKEN_VERIFIED,
+        200,
+        invitation
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || errorMessages.WORKSPACE.TOKEN_VERIFICATION_FAILED,
+        err.statusCode || 500
+      );
+    }
+  }
+
+  static async acceptInvitation(req, res) {
+    try {
+      const { token } = req.body;
+      const user = req.user;
+
+      if (!token) {
+        throw new ApiError(errorMessages.WORKSPACE.TOKEN_NOT_PROVIDED, 400);
+      }
+
+      const result = await workspaceDb.acceptInvitation({ token, user });
+
+      return apiResponse.success(
+        res,
+        successMessages.WORKSPACE.INVITATION_ACCEPTED,
+        200,
+        result
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || errorMessages.WORKSPACE.ACCEPT_INVITATION_FAILED,
+        err.statusCode || 500
+      );
+    }
+  }
+
+  
 }
