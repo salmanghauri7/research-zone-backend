@@ -1,4 +1,4 @@
-import { config } from "../../constants/config";
+import { config } from "../../constants/config.js";
 
 /**
  * Generates an HTML email template for workspace invitation.
