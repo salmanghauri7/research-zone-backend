@@ -1,12 +1,22 @@
 import express from "express";
+import { createServer } from "http";
 import { config, configInit } from "./constants/config.js";
 import routes from "./routes/index.js";
 import connectDb from "./config/dbConfig.js";
 import { globalError } from "./utils/apiError.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { initializeSocket } from "./config/socketConfig.js";
+import { registerChatHandlers } from "./modules/chat/socketHandler.js";
 
 const app = express();
+const httpServer = createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(httpServer);
+
+// Register socket event handlers
+registerChatHandlers(io);
 
 // middlewares
 app.use(express.json());
@@ -68,8 +78,9 @@ const startServer = async () => {
     await connectDb();
 
     // 3. Start the server ONLY AFTER the DB is connected
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`✅ Server is connected http://localhost:${PORT}`);
+      console.log(`🔌 Socket.IO is ready for connections`);
     });
   } catch (error) {
     // 4. If the database connection fails, log it and exit

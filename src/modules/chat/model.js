@@ -30,7 +30,6 @@ const messageSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // ------------------------------
 
     // --- 2. NORMAL REPLY (The "Quote" Reply) ---
     // If this is set, the message stays in the MAIN chat,
@@ -47,10 +46,29 @@ const messageSchema = new mongoose.Schema(
       trim: true,
     },
 
+    isEdited: {
+      type: boolean,
+      default: false,
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    reactions: {
+      type: Map,
+      of: [mongoose.Schema.Types.ObjectId],
+      default: {},
+    },
+
     messageType: {
       type: String,
       enum: ["text", "file", "image"],
       default: "text",
+    },
+
+    voiceDuration:{
+      type: Number,
     },
 
     // For papers or images shared during research
