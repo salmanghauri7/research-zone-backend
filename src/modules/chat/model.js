@@ -47,7 +47,7 @@ const messageSchema = new mongoose.Schema(
     },
 
     isEdited: {
-      type: boolean,
+      type: Boolean,
       default: false,
     },
 
@@ -67,7 +67,7 @@ const messageSchema = new mongoose.Schema(
       default: "text",
     },
 
-    voiceDuration:{
+    voiceDuration: {
       type: Number,
     },
 

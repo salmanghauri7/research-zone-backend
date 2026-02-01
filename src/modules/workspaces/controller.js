@@ -21,13 +21,13 @@ export default class workspaceController {
         res,
         successMessages.WORKSPACE.CREATE_SUCCESS,
         200,
-        workspace
+        workspace,
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.WORKSPACE.CREATE_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
@@ -40,13 +40,13 @@ export default class workspaceController {
         res,
         successMessages.GET_WORKSPACES_SUCCESS,
         200,
-        workspaces
+        workspaces,
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.WORKSPACE.GET_WORKSPACES_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
@@ -59,13 +59,13 @@ export default class workspaceController {
         res,
         successMessages.WORKSPACE.GET_WORKSPACES_SUCCESS,
         200,
-        workspaces
+        workspaces,
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.WORKSPACE.GET_WORKSPACES_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
@@ -83,7 +83,7 @@ export default class workspaceController {
       if (!workspaceId) {
         throw new ApiError(
           errorMessages.WORKSPACE.WORKSPACE_ID_NOT_PROVIDED,
-          400
+          400,
         );
       }
 
@@ -97,13 +97,13 @@ export default class workspaceController {
         res,
         successMessages.WORKSPACE.INVITATION_SENT,
         200,
-        invitation
+        invitation,
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.WORKSPACE.INVITATION_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
@@ -122,13 +122,13 @@ export default class workspaceController {
         res,
         successMessages.WORKSPACE.TOKEN_VERIFIED,
         200,
-        invitation
+        invitation,
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.WORKSPACE.TOKEN_VERIFICATION_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
@@ -148,13 +148,77 @@ export default class workspaceController {
         res,
         successMessages.WORKSPACE.INVITATION_ACCEPTED,
         200,
-        result
+        result,
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.WORKSPACE.ACCEPT_INVITATION_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
+      );
+    }
+  }
+
+  static async leaveWorkspace(req, res) {
+    try {
+      const user = req.user;
+      const { workSpaceId } = req.params;
+
+      if (!workSpaceId) {
+        throw new ApiError(
+          errorMessages.WORKSPACE.WORKSPACE_ID_NOT_PROVIDED,
+          400,
+        );
+      }
+
+      const result = await workspaceDb.leaveWorkspace({
+        workspaceId: workSpaceId,
+        user,
+      });
+
+      return apiResponse.success(
+        res,
+        successMessages.WORKSPACE.LEAVE_SUCCESS,
+        200,
+        result,
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || errorMessages.WORKSPACE.LEAVE_FAILED,
+        err.statusCode || 500,
+      );
+    }
+  }
+
+  static async checkWorkspaceRole(req, res) {
+    try {
+      const user = req.user;
+      const { workspaceId } = req.params;
+
+      if (!workspaceId) {
+        throw new ApiError(
+          errorMessages.WORKSPACE.WORKSPACE_ID_NOT_PROVIDED,
+          400,
+        );
+      }
+
+      const result = await workspaceDb.checkUserWorkspaceRole({
+        workspaceId,
+        user,
+      });
+
+      return apiResponse.success(
+        res,
+        successMessages.WORKSPACE.ROLE_CHECK_SUCCESS,
+        200,
+        result,
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || errorMessages.WORKSPACE.ROLE_CHECK_FAILED,
+        err.statusCode || 500,
       );
     }
   }

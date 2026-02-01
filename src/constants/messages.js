@@ -39,6 +39,9 @@ export const errorMessages = {
     TOKEN_VERIFICATION_FAILED: "Failed to verify invitation token",
     ACCEPT_INVITATION_FAILED: "Failed to accept invitation",
     TOKEN_NOT_VERIFIED: "Token is not verified",
+    NOT_MEMBER: "You are not a member of this workspace",
+    LEAVE_FAILED: "Failed to leave workspace",
+    ROLE_CHECK_FAILED: "Failed to check workspace role",
   },
 };
 export const successMessages = {
@@ -56,5 +59,7 @@ export const successMessages = {
     INVITATION_SENT: "Invitation sent successfully",
     TOKEN_VERIFIED: "Invitation token verified successfully",
     INVITATION_ACCEPTED: "Invitation accepted successfully",
+    LEAVE_SUCCESS: "Successfully left the workspace",
+    ROLE_CHECK_SUCCESS: "Workspace role retrieved successfully",
   },
 };

@@ -9,7 +9,7 @@ let io;
  * @param {import('http').Server} httpServer - The HTTP server instance
  * @returns {Server} - The Socket.IO server instance
  */
-export const initializeSocket = (httpServer) => {
+export const initializeSocket = (httpServer) => {  
   io = new Server(httpServer, {
     cors: {
       origin: config.FRONTEND_URL || "http://localhost:3000",

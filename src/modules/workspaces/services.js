@@ -7,6 +7,7 @@ import { sendEmail } from "../../utils/sendMail.js";
 import { invitationTemplate } from "../../utils/emailTemplates/invitationTemp.js";
 import { ApiError } from "../../utils/apiError.js";
 import { errorMessages } from "../../constants/messages.js";
+import Message from "../chat/model.js";
 
 dayjs.extend(relativeTime);
 
@@ -97,7 +98,7 @@ export default class workspaceServices extends BaseRepository {
 
     // Check if user is already a member
     const isMember = workspace.members.some(
-      (member) => member.user.toString() === email
+      (member) => member.user.toString() === email,
     );
     if (isMember) {
       throw new ApiError(errorMessages.WORKSPACE.ALREADY_MEMBER, 400);
@@ -126,7 +127,7 @@ export default class workspaceServices extends BaseRepository {
     const emailHtml = invitationTemplate(
       workspace.title,
       inviter.username || inviter.email,
-      invitation.token
+      invitation.token,
     );
 
     await sendEmail(email, `Invitation to join ${workspace.title}`, emailHtml);
@@ -215,7 +216,7 @@ export default class workspaceServices extends BaseRepository {
 
     // Check if user is already a member
     const isMember = workspace.members.some(
-      (member) => member.user.toString() === user.id.toString()
+      (member) => member.user.toString() === user.id.toString(),
     );
 
     if (isMember) {
@@ -236,6 +237,76 @@ export default class workspaceServices extends BaseRepository {
       workspaceId: workspace._id,
       workspaceTitle: workspace.title,
       message: "Successfully joined the workspace",
+    };
+  }
+
+  async leaveWorkspace({ workspaceId, user }) {
+    // Find the workspace
+    const workspace = await this.findById(workspaceId);
+
+    if (!workspace) {
+      throw new ApiError(errorMessages.WORKSPACE.NOT_FOUND, 404);
+    }
+
+    // Check if user is a member
+    const isMember = workspace.members.some(
+      (member) => member.user.toString() === user.id.toString(),
+    );
+
+    if (!isMember) {
+      throw new ApiError(errorMessages.WORKSPACE.NOT_MEMBER, 400);
+    }
+
+    // Check if user is the owner
+    const isOwner = workspace.owner.toString() === user.id.toString();
+
+    if (isOwner) {
+      // If owner is leaving, delete the entire workspace and all related data
+      await Message.deleteMany({ workspaceId });
+      await WorkspaceInvitation.deleteMany({ workspaceId });
+      await this.deleteById(workspaceId);
+
+      return {
+        workspaceId: workspace._id,
+        workspaceTitle: workspace.title,
+        deleted: true,
+      };
+    } else {
+      // If regular member is leaving, just remove them from members array
+      await this.updateById(workspaceId, {
+        $pull: { members: { user: user.id } },
+      });
+
+      return {
+        workspaceId: workspace._id,
+        workspaceTitle: workspace.title,
+        deleted: false,
+      };
+    }
+  }
+
+  async checkUserWorkspaceRole({ workspaceId, user }) {
+    // Find the workspace
+    const workspace = await this.findById(workspaceId);
+
+    if (!workspace) {
+      throw new ApiError(errorMessages.WORKSPACE.NOT_FOUND, 404);
+    }
+
+    // Check if user is the owner
+    const isOwner = workspace.owner.toString() === user.id.toString();
+
+    // Check if user is a member
+    const isMember = workspace.members.some(
+      (member) => member.user.toString() === user.id.toString(),
+    );
+
+    return {
+      workspaceId: workspace._id,
+      workspaceTitle: workspace.title,
+      isOwner,
+      isMember,
+      role: isOwner ? "owner" : isMember ? "member" : "none",
     };
   }
 }
