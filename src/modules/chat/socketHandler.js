@@ -19,7 +19,7 @@ const handleJoinWorkspace = async (socket, data) => {
     // Validate workspace access using service
     const workspace = await chatServices.validateWorkspaceAccess(
       workspaceId,
-      user._id,
+      user.id,
     );
 
     // Join the workspace room

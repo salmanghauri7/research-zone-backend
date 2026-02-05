@@ -24,7 +24,7 @@ export default class ChatServices {
 
     // Check if user is a member or owner of the workspace
     const isMember =
-      workspace.owner.toString() === userId.toString() ||
+      workspace.owner?.toString() === userId.toString() ||
       workspace.members.some(
         (member) => member.user.toString() === userId.toString(),
       );
