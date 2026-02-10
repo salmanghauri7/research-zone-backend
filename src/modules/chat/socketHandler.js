@@ -3,6 +3,7 @@
  */
 
 import ChatServices from "./services.js";
+import { ApiError } from "../../utils/apiError.js";
 
 const chatServices = new ChatServices();
 
@@ -13,8 +14,18 @@ const chatServices = new ChatServices();
  */
 const handleJoinWorkspace = async (socket, data) => {
   try {
+    // Validate request data
+    if (!data) {
+      throw new ApiError("Request data is required", 400);
+    }
+
     const { workspaceId } = data;
     const user = socket.user;
+
+    // Validate required fields
+    if (!workspaceId) {
+      throw new ApiError("Workspace ID is required", 400);
+    }
 
     // Validate workspace access using service
     const workspace = await chatServices.validateWorkspaceAccess(
@@ -45,9 +56,55 @@ const handleJoinWorkspace = async (socket, data) => {
     });
   } catch (error) {
     console.error("Error in join-workspace handler:", error);
-    socket.emit("error", {
-      event: "join-workspace",
+    socket.emit("join-workspace-error", {
       message: error.message || "Failed to join workspace",
+      statusCode: error.statusCode || 500,
+    });
+  }
+};
+
+const handleSendMessage = async (socket, data) => {
+  try {
+    // Validate request data
+    if (!data) {
+      throw new ApiError("Request data is required", 400);
+    }
+
+    const { workspaceId, content, parentMessageId, quotedMessageId } = data;
+    const user = socket.user;
+
+    // Validate required fields
+    if (!workspaceId) {
+      throw new ApiError("Workspace ID is required", 400);
+    }
+
+    if (!content || content.trim() === "") {
+      throw new ApiError("Message content is required", 400);
+    }
+
+    // Validate workspace access
+    await chatServices.validateWorkspaceAccess(workspaceId, user.id);
+
+    // Create and save message
+    const message = await chatServices.createMessage({
+      workspaceId,
+      sender: user.id,
+      content,
+      parentMessageId,
+      quotedMessageId,
+    });
+
+    // Emit message to all users in the workspace (including sender)
+    socket.to(workspaceId).emit("new-message", message);
+    socket.emit("message-sent", message);
+
+    console.log(
+      `📨 Message sent by ${user.email || user.id} in workspace: ${workspaceId}`,
+    );
+  } catch (error) {
+    console.error("Error in sending message:", error.message);
+    socket.emit("send-message-error", {
+      message: error.message || "Failed to send message",
       statusCode: error.statusCode || 500,
     });
   }
@@ -86,6 +143,7 @@ export const registerChatHandlers = (io) => {
 
     // Register event handlers
     socket.on("join-workspace", (data) => handleJoinWorkspace(socket, data));
+    socket.on("send-message", (data) => handleSendMessage(socket, data));
 
     socket.on("disconnect", (reason) => handleDisconnect(socket, reason));
     socket.on("error", (error) => handleError(socket, error));
