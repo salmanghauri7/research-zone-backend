@@ -4,7 +4,6 @@ import Message from "./model.js";
 import { ApiError } from "../../utils/apiError.js";
 import BaseRepository from "../../utils/baseRepository.js";
 
-
 export default class ChatServices extends BaseRepository {
   constructor(model) {
     super(model);
@@ -100,7 +99,7 @@ export default class ChatServices extends BaseRepository {
     }
 
     // Populate sender information before returning
-    await message.populate("sender", "firstName username email");
+    await message.populate("sender", "firstName");
 
     return message;
   }
@@ -112,17 +111,84 @@ export default class ChatServices extends BaseRepository {
    * @param {string} [cursor] - Cursor for pagination (last message ID)
    * @returns {Promise<Object[]>} Array of messages with sender info
    */
-  async getMessagesbyPagination(workspaceId, limit, cursor){
-    const query = {workspaceId: workspaceId};
-    if(cursor){
-      query._id = {$lt: cursor};
+  async getMessagesbyPagination(workspaceId, limit, cursor) {
+    const query = { workspaceId: workspaceId };
+    if (cursor) {
+      query._id = { $lt: cursor };
     }
 
     const messages = await this.model
       .find(query)
+      .populate("sender", "firstName")
       .sort({ _id: -1 }) // Sort by ID descending (newest first)
       .limit(limit);
-    const nextCursor = messages.length > 0 ? messages[messages.length - 1]._id : null;
-    return {messages, nextCursor};
+    const nextCursor =
+      messages.length > 0 ? messages[messages.length - 1]._id : null;
+    return { messages, nextCursor };
+  }
+
+  /**
+   * Delete a message and handle cascade deletion for thread replies
+   * @param {string} messageId - The message ID to delete
+   * @param {string} userId - The user ID requesting deletion
+   * @returns {Promise<Object>} Deletion result
+   * @throws {ApiError} If validation fails
+   */
+  async deleteMessage(messageId, userId) {
+    // Validate messageId format
+    if (!messageId || !mongoose.Types.ObjectId.isValid(messageId)) {
+      throw new ApiError("Invalid message ID", 400);
+    }
+
+    // Fetch the message
+    const message = await Message.findById(messageId);
+    if (!message) {
+      throw new ApiError("Message not found", 404);
+    }
+
+    // Check if user is the sender (permission check)
+    if (message.sender.toString() !== userId.toString()) {
+      throw new ApiError(
+        "You do not have permission to delete this message",
+        403,
+      );
+    }
+
+    // Check if this message has a parentMessageId (it's a thread reply)
+    if (message.parentMessageId) {
+      // This is a thread reply - decrement parent's reply count
+      await Message.findByIdAndUpdate(message.parentMessageId, {
+        $inc: { replyCount: -1 },
+      });
+
+      // Delete the thread reply
+      await Message.findByIdAndDelete(messageId);
+
+      return {
+        deletedMessageId: messageId,
+        isThreadReply: true,
+        parentMessageId: message.parentMessageId,
+      };
+    } else {
+      // This is a main message - check for thread replies
+      const threadReplies = await Message.find({
+        parentMessageId: messageId,
+      });
+
+      // Delete all thread replies
+      if (threadReplies.length > 0) {
+        await Message.deleteMany({ parentMessageId: messageId });
+      }
+
+      // Delete the main message
+      await Message.findByIdAndDelete(messageId);
+
+      return {
+        deletedMessageId: messageId,
+        isThreadReply: false,
+        deletedRepliesCount: threadReplies.length,
+        deletedReplyIds: threadReplies.map((reply) => reply._id),
+      };
+    }
   }
 }

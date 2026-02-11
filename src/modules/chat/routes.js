@@ -4,6 +4,6 @@ import chatController from "./controller.js";
 
 const router = express.Router();
 
-router.get("/worksapce/:id/messages", checkAccessToken, chatController.handleMessagesWithPagination);
+router.get("/workspace/:id/messages", checkAccessToken, chatController.handleMessagesWithPagination);
 
 export default router;

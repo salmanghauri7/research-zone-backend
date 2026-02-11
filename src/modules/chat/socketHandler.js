@@ -110,6 +110,47 @@ const handleSendMessage = async (socket, data) => {
   }
 };
 
+const handleDeleteMessage = async (socket, data) => {
+  try {
+    // Validate request data
+    if (!data) {
+      throw new ApiError("Request data is required", 400);
+    }
+
+    const { messageId, workspaceId } = data;
+    const user = socket.user;
+
+    // Validate required fields
+    if (!messageId) {
+      throw new ApiError("Message ID is required", 400);
+    }
+
+    if (!workspaceId) {
+      throw new ApiError("Workspace ID is required", 400);
+    }
+
+    // Validate workspace access
+    await chatServices.validateWorkspaceAccess(workspaceId, user.id);
+
+    // Delete the message using service
+    const result = await chatServices.deleteMessage(messageId, user.id);
+
+    // Emit deletion event to all users in the workspace
+    socket.to(workspaceId).emit("message-deleted", result);
+    socket.emit("message-deletion-completed", result);
+
+    console.log(
+      `🗑️ Message deleted by ${user.email || user.id} in workspace: ${workspaceId}`,
+    );
+  } catch (error) {
+    console.error("Error in deleting message:", error.message);
+    socket.emit("delete-message-error", {
+      message: error.message || "Failed to delete message",
+      statusCode: error.statusCode || 500,
+    });
+  }
+};
+
 /**
  * Handle user disconnect event
  * @param {Socket} socket - The socket instance
@@ -144,6 +185,8 @@ export const registerChatHandlers = (io) => {
     // Register event handlers
     socket.on("join-workspace", (data) => handleJoinWorkspace(socket, data));
     socket.on("send-message", (data) => handleSendMessage(socket, data));
+
+    socket.on("delete-message", (data) => handleDeleteMessage(socket, data));
 
     socket.on("disconnect", (reason) => handleDisconnect(socket, reason));
     socket.on("error", (error) => handleError(socket, error));
