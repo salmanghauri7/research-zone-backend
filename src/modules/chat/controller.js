@@ -39,4 +39,31 @@ export default class chatController {
       );
     }
   }
+
+  static async handleDeleteAllMessages(req, res) {
+    try {
+      const workspaceId = req.params.id;
+
+      const deletedCount =
+        await chatServices.deleteAllMessagesByWorkspace(workspaceId);
+
+      return apiResponse.success(
+        res,
+        successMessages.CHAT?.MESSAGES_DELETED ||
+          "All messages deleted successfully",
+        200,
+        {
+          deletedCount,
+        },
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message ||
+          errorMessages.CHAT?.DELETE_MESSAGES_FAILED ||
+          "Failed to delete messages",
+        err.statusCode || 500,
+      );
+    }
+  }
 }

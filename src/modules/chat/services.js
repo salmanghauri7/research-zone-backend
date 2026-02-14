@@ -72,6 +72,7 @@ export default class ChatServices extends BaseRepository {
 
     // Validate parentMessageId if provided
     if (parentMessageId && !mongoose.Types.ObjectId.isValid(parentMessageId)) {
+      console.error(parentMessageId);
       throw new ApiError("Invalid parent message ID", 400);
     }
 
@@ -80,8 +81,45 @@ export default class ChatServices extends BaseRepository {
       throw new ApiError("Invalid quoted message ID", 400);
     }
 
-    // Create message
-    const message = new Message({
+    // If parentMessageId is provided, validate it exists and belongs to same workspace
+    if (parentMessageId) {
+      const parentMessage = await Message.findById(parentMessageId);
+
+      if (!parentMessage) {
+        throw new ApiError("Parent message not found", 404);
+      }
+
+      if (parentMessage.workspaceId.toString() !== workspaceId.toString()) {
+        throw new ApiError(
+          "Parent message belongs to a different workspace",
+          400,
+        );
+      }
+
+      // Ensure we're not trying to reply to a deleted message
+      if (parentMessage.isDeleted) {
+        throw new ApiError("Cannot reply to a deleted message", 400);
+      }
+    }
+
+    // Validate quotedMessageId if provided
+    if (quotedMessageId) {
+      const quotedMessage = await Message.findById(quotedMessageId);
+
+      if (!quotedMessage) {
+        throw new ApiError("Quoted message not found", 404);
+      }
+
+      if (quotedMessage.workspaceId.toString() !== workspaceId.toString()) {
+        throw new ApiError(
+          "Quoted message belongs to a different workspace",
+          400,
+        );
+      }
+    }
+
+    // Create the message - ensure this completes
+    const message = await Message.create({
       workspaceId,
       sender,
       content,
@@ -89,13 +127,20 @@ export default class ChatServices extends BaseRepository {
       quotedMessageId: quotedMessageId || null,
     });
 
-    await message.save();
-
     // If it's a threaded reply, increment parent's reply count
     if (parentMessageId) {
-      await Message.findByIdAndUpdate(parentMessageId, {
-        $inc: { replyCount: 1 },
-      });
+      const updateResult = await Message.findByIdAndUpdate(
+        parentMessageId,
+        { $inc: { replyCount: 1 } },
+        { new: true },
+      );
+
+      // This should never happen since we validated above, but adding as safeguard
+      if (!updateResult) {
+        console.error(
+          `Failed to increment reply count for parent message: ${parentMessageId}`,
+        );
+      }
     }
 
     // Populate sender information before returning
@@ -190,5 +235,23 @@ export default class ChatServices extends BaseRepository {
         deletedReplyIds: threadReplies.map((reply) => reply._id),
       };
     }
+  }
+
+  /**
+   * Delete all messages in a workspace (for testing purposes)
+   * @param {string} workspaceId - The workspace ID
+   * @returns {Promise<number>} Number of deleted messages
+   * @throws {ApiError} If validation fails
+   */
+  async deleteAllMessagesByWorkspace(workspaceId) {
+    // Validate workspaceId format
+    if (!workspaceId || !mongoose.Types.ObjectId.isValid(workspaceId)) {
+      throw new ApiError("Invalid workspace ID", 400);
+    }
+
+    // Delete all messages for the workspace
+    const result = await Message.deleteMany({ workspaceId: workspaceId });
+
+    return result.deletedCount;
   }
 }
