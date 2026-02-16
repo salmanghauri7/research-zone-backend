@@ -12,12 +12,6 @@ import { registerChatHandlers } from "./modules/chat/socketHandler.js";
 const app = express();
 const httpServer = createServer(app);
 
-// Initialize Socket.IO
-const io = initializeSocket(httpServer);
-
-// Register socket event handlers
-registerChatHandlers(io);
-
 // middlewares
 app.use(express.json());
 
@@ -33,7 +27,7 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: config.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
   }),
 );
@@ -76,6 +70,10 @@ const startServer = async () => {
     console.log(`SMTP_PASS: ${config.SMTP_PASS ? ` Set ` : "❌ Missing"}`);
 
     await connectDb();
+
+    // Initialize Socket.IO AFTER config is loaded
+    const io = initializeSocket(httpServer);
+    registerChatHandlers(io);
 
     // 3. Start the server ONLY AFTER the DB is connected
     httpServer.listen(PORT, () => {
