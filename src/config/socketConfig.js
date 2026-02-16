@@ -10,9 +10,16 @@ let io;
  * @returns {Server} - The Socket.IO server instance
  */
 export const initializeSocket = (httpServer) => {
+  // Remove trailing slash from FRONTEND_URL to match browser Origin header
+  const socketOrigin = (config.FRONTEND_URL || "http://localhost:3000").replace(
+    /\/$/,
+    "",
+  );
+  console.log(`🔌 Socket.IO CORS origin: ${socketOrigin}`);
+
   io = new Server(httpServer, {
     cors: {
-      origin: config.FRONTEND_URL || "http://localhost:3000",
+      origin: socketOrigin,
       credentials: true,
     },
   });
