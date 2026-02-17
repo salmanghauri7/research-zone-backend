@@ -20,8 +20,11 @@ export const initializeSocket = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
       origin: socketOrigin,
+      methods: ["GET", "POST"],
       credentials: true,
     },
+    path: "/socket.io",
+    transports: ["websocket", "polling"],
   });
 
   // Apply authentication middleware

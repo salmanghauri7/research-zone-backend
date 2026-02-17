@@ -173,7 +173,7 @@ export default class ChatServices extends BaseRepository {
   }
 
   /**
-   * Delete a message and handle cascade deletion for thread replies
+   * Soft delete a message and handle cascade deletion for thread replies
    * @param {string} messageId - The message ID to delete
    * @param {string} userId - The user ID requesting deletion
    * @returns {Promise<Object>} Deletion result
@@ -191,6 +191,11 @@ export default class ChatServices extends BaseRepository {
       throw new ApiError("Message not found", 404);
     }
 
+    // Check if message is already deleted
+    if (message.isDeleted) {
+      throw new ApiError("Message is already deleted", 400);
+    }
+
     // Check if user is the sender (permission check)
     if (message.sender.toString() !== userId.toString()) {
       throw new ApiError(
@@ -199,15 +204,18 @@ export default class ChatServices extends BaseRepository {
       );
     }
 
+    // Soft delete: Clear content and attachments, set isDeleted flag
+    message.content = "";
+    message.attachments = [];
+    message.isDeleted = true;
+    await message.save();
+
     // Check if this message has a parentMessageId (it's a thread reply)
     if (message.parentMessageId) {
       // This is a thread reply - decrement parent's reply count
       await Message.findByIdAndUpdate(message.parentMessageId, {
         $inc: { replyCount: -1 },
       });
-
-      // Delete the thread reply
-      await Message.findByIdAndDelete(messageId);
 
       return {
         deletedMessageId: messageId,
@@ -220,13 +228,10 @@ export default class ChatServices extends BaseRepository {
         parentMessageId: messageId,
       });
 
-      // Delete all thread replies
+      // Permanently delete all thread replies (hard delete)
       if (threadReplies.length > 0) {
         await Message.deleteMany({ parentMessageId: messageId });
       }
-
-      // Delete the main message
-      await Message.findByIdAndDelete(messageId);
 
       return {
         deletedMessageId: messageId,
@@ -235,6 +240,55 @@ export default class ChatServices extends BaseRepository {
         deletedReplyIds: threadReplies.map((reply) => reply._id),
       };
     }
+  }
+
+  /**
+   * Edit a message
+   * @param {string} messageId - The message ID to edit
+   * @param {string} userId - The user ID requesting edit
+   * @param {string} content - The new content
+   * @returns {Promise<Object>} Updated message
+   * @throws {ApiError} If validation fails
+   */
+  async editMessage(messageId, userId, content) {
+    // Validate messageId format
+    if (!messageId || !mongoose.Types.ObjectId.isValid(messageId)) {
+      throw new ApiError("Invalid message ID", 400);
+    }
+
+    // Validate content
+    if (!content || content.trim() === "") {
+      throw new ApiError("Message content is required", 400);
+    }
+
+    // Fetch the message
+    const message = await Message.findById(messageId);
+    if (!message) {
+      throw new ApiError("Message not found", 404);
+    }
+
+    // Check if user is the sender (permission check)
+    if (message.sender.toString() !== userId.toString()) {
+      throw new ApiError(
+        "You do not have permission to edit this message",
+        403,
+      );
+    }
+
+    // Check if message is already deleted
+    if (message.isDeleted) {
+      throw new ApiError("Cannot edit a deleted message", 400);
+    }
+
+    // Update the message
+    message.content = content.trim();
+    message.isEdited = true;
+    await message.save();
+
+    // Populate sender information before returning
+    await message.populate("sender", "firstName");
+
+    return message;
   }
 
   /**

@@ -151,6 +151,55 @@ const handleDeleteMessage = async (socket, data) => {
   }
 };
 
+const handleEditMessage = async (socket, data) => {
+  try {
+    // Validate request data
+    if (!data) {
+      throw new ApiError("Request data is required", 400);
+    }
+
+    const { messageId, workspaceId, content } = data;
+    const user = socket.user;
+
+    // Validate required fields
+    if (!messageId) {
+      throw new ApiError("Message ID is required", 400);
+    }
+
+    if (!workspaceId) {
+      throw new ApiError("Workspace ID is required", 400);
+    }
+
+    if (!content || content.trim() === "") {
+      throw new ApiError("Message content is required", 400);
+    }
+
+    // Validate workspace access
+    await chatServices.validateWorkspaceAccess(workspaceId, user.id);
+
+    // Edit the message using service
+    const updatedMessage = await chatServices.editMessage(
+      messageId,
+      user.id,
+      content,
+    );
+
+    // Emit update event to all users in the workspace
+    socket.to(workspaceId).emit("message-edited", updatedMessage);
+    socket.emit("message-edit-completed", updatedMessage);
+
+    console.log(
+      `✏️ Message edited by ${user.email || user.id} in workspace: ${workspaceId}`,
+    );
+  } catch (error) {
+    console.error("Error in editing message:", error.message);
+    socket.emit("edit-message-error", {
+      message: error.message || "Failed to edit message",
+      statusCode: error.statusCode || 500,
+    });
+  }
+};
+
 /**
  * Handle user disconnect event
  * @param {Socket} socket - The socket instance
@@ -185,8 +234,8 @@ export const registerChatHandlers = (io) => {
     // Register event handlers
     socket.on("join-workspace", (data) => handleJoinWorkspace(socket, data));
     socket.on("send-message", (data) => handleSendMessage(socket, data));
-
     socket.on("delete-message", (data) => handleDeleteMessage(socket, data));
+    socket.on("edit-message", (data) => handleEditMessage(socket, data));
 
     socket.on("disconnect", (reason) => handleDisconnect(socket, reason));
     socket.on("error", (error) => handleError(socket, error));

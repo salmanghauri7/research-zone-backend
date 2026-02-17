@@ -42,8 +42,12 @@ const messageSchema = new mongoose.Schema(
 
     content: {
       type: String,
-      required: true,
+      required: function() {
+        // Content is required only if message is not deleted
+        return !this.isDeleted;
+      },
       trim: true,
+      default: "",
     },
     isEdited: {
       type: Boolean,
