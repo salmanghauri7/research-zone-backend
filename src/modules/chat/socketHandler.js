@@ -208,6 +208,7 @@ const handleEditMessage = async (socket, data) => {
 const handleTyping = (socket, data) => {
   try {
     const { workspaceId, username } = data;
+    const user = socket.user;
 
     if (!workspaceId) {
       return;
@@ -215,8 +216,8 @@ const handleTyping = (socket, data) => {
 
     // Broadcast to all users in the workspace except the sender
     socket.to(workspaceId).emit("user_typing", {
-      username: username || socket.user.email || socket.user._id,
-      userId: socket.user._id,
+      username: user.firstName || user.email || user._id,
+      userId: user._id,
     });
   } catch (error) {
     console.error("Error in typing handler:", error.message);
