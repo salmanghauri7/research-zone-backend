@@ -201,6 +201,52 @@ const handleEditMessage = async (socket, data) => {
 };
 
 /**
+ * Handle typing event
+ * @param {Socket} socket - The socket instance
+ * @param {Object} data - Event data containing username and workspaceId
+ */
+const handleTyping = (socket, data) => {
+  try {
+    const { workspaceId, username } = data;
+
+    if (!workspaceId) {
+      return;
+    }
+
+    // Broadcast to all users in the workspace except the sender
+    socket.to(workspaceId).emit("user_typing", {
+      username: username || socket.user.email || socket.user._id,
+      userId: socket.user._id,
+    });
+  } catch (error) {
+    console.error("Error in typing handler:", error.message);
+  }
+};
+
+/**
+ * Handle stop typing event
+ * @param {Socket} socket - The socket instance
+ * @param {Object} data - Event data containing username and workspaceId
+ */
+const handleStopTyping = (socket, data) => {
+  try {
+    const { workspaceId, username } = data;
+
+    if (!workspaceId) {
+      return;
+    }
+
+    // Broadcast to all users in the workspace except the sender
+    socket.to(workspaceId).emit("user_stop_typing", {
+      username: username || socket.user.email || socket.user._id,
+      userId: socket.user._id,
+    });
+  } catch (error) {
+    console.error("Error in stop typing handler:", error.message);
+  }
+};
+
+/**
  * Handle user disconnect event
  * @param {Socket} socket - The socket instance
  * @param {string} reason - Disconnect reason
@@ -236,6 +282,8 @@ export const registerChatHandlers = (io) => {
     socket.on("send-message", (data) => handleSendMessage(socket, data));
     socket.on("delete-message", (data) => handleDeleteMessage(socket, data));
     socket.on("edit-message", (data) => handleEditMessage(socket, data));
+    socket.on("typing", (data) => handleTyping(socket, data));
+    socket.on("stop_typing", (data) => handleStopTyping(socket, data));
 
     socket.on("disconnect", (reason) => handleDisconnect(socket, reason));
     socket.on("error", (error) => handleError(socket, error));
@@ -243,7 +291,5 @@ export const registerChatHandlers = (io) => {
     // TODO: Add more chat-specific event handlers here
     // Example events to implement later:
     // - leave-workspace: Leave a workspace room
-    // - send-message: Send a message to a workspace
-    // - typing: Broadcast typing indicator
   });
 };
