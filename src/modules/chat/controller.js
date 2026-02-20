@@ -66,4 +66,42 @@ export default class chatController {
       );
     }
   }
+
+  static async handleFileUpload(req, res) {
+    try {
+      // Check if any files were uploaded
+      if (!req.files || req.files.length === 0) {
+        return apiResponse.error(
+          res,
+          "No files uploaded. Please upload at least one file.",
+          400,
+        );
+      }
+
+      // Format files to match the Message schema's attachments structure
+      const attachments = req.files.map((file) => ({
+        url: file.location,           // Schema expects 'url', not 'fileUrl'
+        fileName: file.originalname,
+        fileKey: file.key,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+      }));
+
+      return apiResponse.success(
+        res,
+        "Files uploaded successfully",
+        200,
+        {
+          attachments,                // Now matches schema exactly
+          totalFiles: attachments.length,
+        },
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || "Failed to upload files",
+        err.statusCode || 500,
+      );
+    }
+  }
 }

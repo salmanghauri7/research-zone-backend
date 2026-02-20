@@ -77,7 +77,14 @@ const messageSchema = new mongoose.Schema(
     // For papers or images shared during research
     attachments: [
       {
-        url: String,
+        url: {
+          type: String,
+          required: true,
+        },
+        fileName: String,
+        fileKey: String,
+        fileSize: Number,
+        mimeType: String,
       },
     ],
   },

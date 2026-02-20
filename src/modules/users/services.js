@@ -51,7 +51,7 @@ export default class userservices extends BaseRepository {
       await this.updateOne(
         { email },
         { $set: dataToSave }, // Use $set to update all fields
-        { runValidators: true }
+        { runValidators: true },
       );
     } else {
       // Create new user
@@ -63,7 +63,7 @@ export default class userservices extends BaseRepository {
       await sendEmail(
         email,
         constants.VERIFICATION_EMAIL_SUBJECT,
-        signupOTPEmailTemp(firstName, otp)
+        signupOTPEmailTemp(firstName, otp),
       );
     } catch (error) {
       console.error("Email sending failed, cleaning up user:", error);
@@ -87,14 +87,14 @@ export default class userservices extends BaseRepository {
       await sendEmail(
         email,
         constants.VERIFICATION_EMAIL_SUBJECT,
-        signupOTPEmailTemp(firstName, otp)
+        signupOTPEmailTemp(firstName, otp),
       );
 
       // Update OTP only after email is sent successfully
       await this.updateOne(
         { email },
         { $set: { otp, otpExpiresAt } },
-        { runValidators: true }
+        { runValidators: true },
       );
     } catch (error) {
       console.error("Failed to resend OTP:", error);
@@ -142,7 +142,7 @@ export default class userservices extends BaseRepository {
 
     const isPasswordCorrect = await this.comparePassword(
       password,
-      user.passwordHash
+      user.passwordHash,
     );
     if (!isPasswordCorrect)
       throw new ApiError(errorMessages.USER.INVALID_CREDENTIALS, 401);
@@ -176,7 +176,7 @@ export default class userservices extends BaseRepository {
       authProviders: user.authProviders,
     };
 
-    const accessToken = generateJWT(payload, { expiresIn: "30m" });
+    const accessToken = generateJWT(payload, { expiresIn: "2d" });
     return accessToken;
   }
 
@@ -215,7 +215,7 @@ export default class userservices extends BaseRepository {
               profilePictureUrl: userData.picture,
             },
           },
-          { new: true }
+          { new: true },
         );
       }
 

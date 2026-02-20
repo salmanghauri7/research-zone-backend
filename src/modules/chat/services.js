@@ -125,6 +125,7 @@ export default class ChatServices extends BaseRepository {
       content,
       parentMessageId: parentMessageId || null,
       quotedMessageId: quotedMessageId || null,
+      attachments: messageData.attachments,
     });
 
     // If it's a threaded reply, increment parent's reply count
