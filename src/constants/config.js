@@ -18,7 +18,13 @@ export const config = {
   AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
   AWS_REGION: process.env.AWS_REGION,
-  S3_BUCKET_NAME: process.env.S3_BUCKET_NAME
+  S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
+  CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN,
+  CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY.replace(
+    /\\n/g,
+    "\n",
+  ),
+  CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID,
 };
 
 export const constants = {
@@ -32,9 +38,9 @@ export const configInit = async () => {
   }
 
   console.log(
-    "☁️ Running in Production Mode (Fetching from AWS Parameter Store...)"
+    "☁️ Running in Production Mode (Fetching from AWS Parameter Store...)",
   );
-  
+
   const client = new SSMClient({ region: "ap-south-1" });
   let nextToken; // Store the pagination token
   let loadedCount = 0;
@@ -47,7 +53,7 @@ export const configInit = async () => {
         WithDecryption: true,
         Recursive: true,
         NextToken: nextToken, // Pass the token from the previous loop (undefined on first run)
-        MaxResults: 10 // Explicitly stating the max (optional, but good for clarity)
+        MaxResults: 10, // Explicitly stating the max (optional, but good for clarity)
       });
 
       const response = await client.send(command);
@@ -57,7 +63,14 @@ export const configInit = async () => {
           const name = param.Name.split("/").pop();
 
           if (name in config) {
-            config[name] = param.Value;
+            let value = param.Value;
+
+            // Handle CLOUDFRONT_PRIVATE_KEY: replace literal \n with actual newlines
+            if (name === "CLOUDFRONT_PRIVATE_KEY") {
+              value = value.replace(/\\n/g, "\n");
+            }
+
+            config[name] = value;
             console.log(`   ✅ Loaded: ${name}`);
             loadedCount++;
           } else {
@@ -68,11 +81,10 @@ export const configInit = async () => {
 
       // Update nextToken for the next iteration
       nextToken = response.NextToken;
-
     } while (nextToken); // Continue only if a NextToken exists
 
     console.log(
-      `\n✅ AWS Secrets loaded successfully (${loadedCount} parameters)`
+      `\n✅ AWS Secrets loaded successfully (${loadedCount} parameters)`,
     );
 
     // Debug: Check if critical SMTP values are loaded
@@ -80,12 +92,10 @@ export const configInit = async () => {
     console.log(
       `   SMTP_USER: ${
         config.SMTP_USER ? `✅ Set ${config.SMTP_USER} ` : "❌ Missing"
-      }`
+      }`,
     );
     console.log(
-      `   SMTP_PASS: ${
-        config.SMTP_PASS ? `✅ Set (Hidden) ` : "❌ Missing"
-      }`
+      `   SMTP_PASS: ${config.SMTP_PASS ? `✅ Set (Hidden) ` : "❌ Missing"}`,
     );
   } catch (error) {
     console.error("❌ Failed to load secrets from AWS:", error);

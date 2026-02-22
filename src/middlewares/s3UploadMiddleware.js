@@ -6,7 +6,7 @@ import { config } from "../constants/config.js";
 import { ApiError } from "../utils/apiError.js";
 
 // Initialize S3 Client
-const s3Client = new S3Client({
+export const s3Client = new S3Client({
   region: config.AWS_REGION,
   credentials: {
     accessKeyId: config.AWS_ACCESS_KEY_ID,
@@ -68,23 +68,7 @@ export const uploadToS3 = multer({
   },
 });
 
-// Middleware for single file upload
-export const uploadSingleFile = (fieldName) => {
-  return (req, res, next) => {
-    const upload = uploadToS3.single(fieldName);
-    upload(req, res, (err) => {
-      if (err instanceof multer.MulterError) {
-        if (err.code === "LIMIT_FILE_SIZE") {
-          return next(new ApiError("File size exceeds 10MB limit", 400));
-        }
-        return next(new ApiError(err.message, 400));
-      } else if (err) {
-        return next(err);
-      }
-      next();
-    });
-  };
-};
+
 
 // Middleware for multiple files upload
 export const uploadMultipleFiles = (fieldName, maxCount = 5) => {
@@ -109,20 +93,3 @@ export const uploadMultipleFiles = (fieldName, maxCount = 5) => {
   };
 };
 
-// Middleware for multiple fields with files
-export const uploadFields = (fields) => {
-  return (req, res, next) => {
-    const upload = uploadToS3.fields(fields);
-    upload(req, res, (err) => {
-      if (err instanceof multer.MulterError) {
-        if (err.code === "LIMIT_FILE_SIZE") {
-          return next(new ApiError("File size exceeds 10MB limit", 400));
-        }
-        return next(new ApiError(err.message, 400));
-      } else if (err) {
-        return next(err);
-      }
-      next();
-    });
-  };
-};

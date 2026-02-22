@@ -18,13 +18,16 @@ export default class chatController {
       const { messages, nextCursor } =
         await chatServices.getMessagesbyPagination(workspaceId, limit, cursor);
 
+      const messagesWithUrls =
+        chatServices.getCloudFrontUrlsForAttachments(messages);
+
       return apiResponse.success(
         res,
         successMessages.CHAT?.MESSAGES_FETCHED ||
           "Messages fetched successfully",
         200,
         {
-          messages,
+          messages: messagesWithUrls,
           cursor: nextCursor,
           hasMore: messages.length === parseInt(limit),
         },
@@ -78,24 +81,31 @@ export default class chatController {
         );
       }
 
-      // Format files to match the Message schema's attachments structure
-      const attachments = req.files.map((file) => ({
-        url: file.location,           // Schema expects 'url', not 'fileUrl'
-        fileName: file.originalname,
-        fileKey: file.key,
-        fileSize: file.size,
-        mimeType: file.mimetype,
-      }));
+      const attachments = await Promise.all(
+        req.files.map(async (file) => {
+          // Validate that the file has a key (S3 object key)
+          if (!file.key) {
+            throw new Error(
+              `File ${file.originalname} was not properly uploaded to S3`,
+            );
+          }
 
-      return apiResponse.success(
-        res,
-        "Files uploaded successfully",
-        200,
-        {
-          attachments,                // Now matches schema exactly
-          totalFiles: attachments.length,
-        },
+          const cloudFrontUrl = chatServices.generateCloudFrontUrlForFile(file.key);
+
+          return {
+            url: cloudFrontUrl, // CloudFront URL
+            fileName: file.originalname,
+            fileKey: file.key, // ALWAYS save this to your DB
+            fileSize: file.size,
+            mimeType: file.mimetype,
+          };
+        }),
       );
+
+      return apiResponse.success(res, "Files uploaded successfully", 200, {
+        attachments, // Now matches schema exactly
+        totalFiles: attachments.length,
+      });
     } catch (err) {
       return apiResponse.error(
         res,
