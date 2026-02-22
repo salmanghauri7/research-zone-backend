@@ -13,7 +13,10 @@
     "deploy": "npm run docker:build && npm run docker:push && ssh -i D:/security-aws/research-zone.pem ubuntu@ec2-13-205-7-218.ap-south-1.compute.amazonaws.com \"docker pull salmanghauri/node-backend:latest && docker stop backend-container || true && docker rm backend-container || true && docker run -d --name backend-container -p 5000:5000 -e AWS_REGION=ap-south-1 salmanghauri/node-backend:latest\""
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.994.0",
     "@aws-sdk/client-ssm": "^3.943.0",
+    "@aws-sdk/cloudfront-signer": "^3.993.0",
+    "@aws-sdk/s3-request-presigner": "^3.995.0",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
@@ -24,6 +27,8 @@
     "google-auth-library": "^10.4.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
+    "multer": "^2.0.2",
+    "multer-s3": "^3.0.1",
     "nodemailer": "^7.0.10",
     "nodemon": "^3.1.10",
     "socket.io": "^4.8.3",

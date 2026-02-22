@@ -8,6 +8,10 @@ import Workspace from "../workspaces/model.js";
 import userservices from "./services.js";
 import { config } from "../../constants/config.js";
 import { ApiError } from "../../utils/apiError.js";
+import {
+  generateCloudFrontSignedCookies,
+  setCloudFrontCookies,
+} from "../../utils/cloudFrontSigner.js";
 
 const userDb = new userservices(User);
 const workspaceDb = new userservices(Workspace);
@@ -54,6 +58,10 @@ export default class userController {
       const accessToken = await userDb.generateAccessToken(user);
 
       await userDb.sendCookie(res, refreshToken, 7 * 24 * 60 * 60 * 1000);
+
+      // Generate CloudFront signed cookies for secure content delivery
+      const signedCookies = generateCloudFrontSignedCookies();
+      setCloudFrontCookies(res, signedCookies);
 
       // Create personal workspace for the user
 
@@ -108,6 +116,10 @@ export default class userController {
       // Set the cookie
       await userDb.sendCookie(res, refreshToken, 7 * 24 * 60 * 60 * 1000);
 
+      // Generate CloudFront signed cookies for secure content delivery
+      const signedCookies = generateCloudFrontSignedCookies();
+      setCloudFrontCookies(res, signedCookies);
+
       return apiResponse.success(res, successMessages.USER.LOGIN_SUCCESS, 200, {
         accessToken: accessToken,
         user: {
@@ -132,6 +144,10 @@ export default class userController {
       const user = await userDb.getUserFromToken(refreshToken);
 
       const accessToken = await userDb.generateAccessToken(user);
+
+      // Generate CloudFront signed cookies for secure content delivery
+      const signedCookies = generateCloudFrontSignedCookies();
+      setCloudFrontCookies(res, signedCookies);
 
       return apiResponse.success(
         res,
@@ -200,6 +216,10 @@ export default class userController {
 
       // Set the cookie
       await userDb.sendCookie(res, refreshToken, 7 * 24 * 60 * 60 * 1000);
+
+      // Generate CloudFront signed cookies for secure content delivery
+      const signedCookies = generateCloudFrontSignedCookies();
+      setCloudFrontCookies(res, signedCookies);
 
       return apiResponse.success(res, successMessages.USER.LOGIN_SUCCESS, 200, {
         accessToken: accessToken,

@@ -70,7 +70,7 @@ const handleSendMessage = async (socket, data) => {
       throw new ApiError("Request data is required", 400);
     }
 
-    const { workspaceId, content, parentMessageId, quotedMessageId } = data;
+    const { workspaceId, content,attachments, parentMessageId, quotedMessageId } = data;
     const user = socket.user;
 
     // Validate required fields
@@ -92,6 +92,7 @@ const handleSendMessage = async (socket, data) => {
       content,
       parentMessageId,
       quotedMessageId,
+      attachments
     });
 
     // Emit message to all users in the workspace (including sender)

@@ -3,6 +3,7 @@ import Workspace from "../workspaces/model.js";
 import Message from "./model.js";
 import { ApiError } from "../../utils/apiError.js";
 import BaseRepository from "../../utils/baseRepository.js";
+import { generateCloudFrontUrl } from "../../utils/cloudFrontSigner.js";
 
 export default class ChatServices extends BaseRepository {
   constructor(model) {
@@ -125,6 +126,7 @@ export default class ChatServices extends BaseRepository {
       content,
       parentMessageId: parentMessageId || null,
       quotedMessageId: quotedMessageId || null,
+      attachments: messageData.attachments,
     });
 
     // If it's a threaded reply, increment parent's reply count
@@ -307,5 +309,35 @@ export default class ChatServices extends BaseRepository {
     const result = await Message.deleteMany({ workspaceId: workspaceId });
 
     return result.deletedCount;
+  }
+
+  generateCloudFrontUrlForFile(fileKey) {
+    // Validate fileKey exists
+    if (!fileKey || typeof fileKey !== 'string' || fileKey.trim() === '') {
+      throw new ApiError('Invalid or missing fileKey', 400);
+    }
+
+    return generateCloudFrontUrl(fileKey);
+  }
+
+  getCloudFrontUrlsForAttachments(messages) {
+    const messagesWithUrls = messages.map((msg) => {
+      const plainMsg = msg.toObject();
+
+      if (plainMsg.attachments && plainMsg.attachments.length > 0) {
+        // Filter out attachments without fileKey and generate URLs for valid ones
+        const validAttachments = plainMsg.attachments.filter(
+          (attachment) => attachment.fileKey && attachment.fileKey.trim() !== ''
+        );
+
+        plainMsg.attachments = validAttachments.map((attachment) => ({
+          ...attachment,
+          url: this.generateCloudFrontUrlForFile(attachment.fileKey),
+        }));
+      }
+      return plainMsg;
+    });
+
+    return messagesWithUrls;
   }
 }

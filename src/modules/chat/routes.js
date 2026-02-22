@@ -1,5 +1,6 @@
 import express from "express";
 import { checkAccessToken } from "../../middlewares/authMiddleware.js";
+import { uploadMultipleFiles } from "../../middlewares/s3UploadMiddleware.js";
 import chatController from "./controller.js";
 
 const router = express.Router();
@@ -12,6 +13,13 @@ router.get(
 router.delete(
   "/workspace/:id/messages",
   chatController.handleDeleteAllMessages,
+);
+
+router.post(
+  "/workspace/:id/upload",
+  checkAccessToken,
+  uploadMultipleFiles("files", 10),
+  chatController.handleFileUpload,
 );
 
 export default router;
