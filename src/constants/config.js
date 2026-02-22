@@ -20,10 +20,7 @@ export const config = {
   AWS_REGION: process.env.AWS_REGION,
   S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
   CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN,
-  CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY.replace(
-    /\\n/g,
-    "\n",
-  ),
+  CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY ? process.env.CLOUDFRONT_PRIVATE_KEY.replace(/\\n/g, "\n") : undefined,
   CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID,
 };
 
