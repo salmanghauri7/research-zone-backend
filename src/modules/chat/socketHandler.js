@@ -70,7 +70,13 @@ const handleSendMessage = async (socket, data) => {
       throw new ApiError("Request data is required", 400);
     }
 
-    const { workspaceId, content,attachments, parentMessageId, quotedMessageId } = data;
+    const {
+      workspaceId,
+      content,
+      attachments,
+      parentMessageId,
+      quotedMessageId,
+    } = data;
     const user = socket.user;
 
     // Validate required fields
@@ -78,22 +84,22 @@ const handleSendMessage = async (socket, data) => {
       throw new ApiError("Workspace ID is required", 400);
     }
 
-    if (!content || content.trim() === "") {
-      throw new ApiError("Message content is required", 400);
-    }
-
     // Validate workspace access
     await chatServices.validateWorkspaceAccess(workspaceId, user.id);
 
     // Create and save message
-    const message = await chatServices.createMessage({
+    let message = await chatServices.createMessage({
       workspaceId,
       sender: user.id,
       content,
       parentMessageId,
       quotedMessageId,
-      attachments
+      attachments,
     });
+
+    if (attachments && attachments.length > 0) {
+      message = chatServices.getCloudFrontUrlsForAttachments([message])[0];
+    }
 
     // Emit message to all users in the workspace (including sender)
     socket.to(workspaceId).emit("new-message", message);

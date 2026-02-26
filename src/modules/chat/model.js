@@ -42,10 +42,6 @@ const messageSchema = new mongoose.Schema(
 
     content: {
       type: String,
-      required: function () {
-        // Content is required only if message is not deleted
-        return !this.isDeleted;
-      },
       trim: true,
       default: "",
     },
@@ -77,6 +73,7 @@ const messageSchema = new mongoose.Schema(
     // For papers or images shared during research
     attachments: [
       {
+        
         fileName: String,
         fileKey: String,
         fileSize: Number,
