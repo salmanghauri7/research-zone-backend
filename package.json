@@ -24,6 +24,7 @@
     "dayjs": "^1.11.19",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "fast-xml-parser": "^5.4.1",
     "google-auth-library": "^10.4.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
