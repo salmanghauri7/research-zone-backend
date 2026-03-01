@@ -13,7 +13,8 @@ const app = express();
 const httpServer = createServer(app);
 
 // middlewares
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // to parse JSON bodies with a larger limit
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Log incoming requests for debugging
 app.use((req, res, next) => {
