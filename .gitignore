@@ -32,3 +32,5 @@ Thumbs.db
 
 # JetBrains IDEs
 .idea/
+
+api_testing/

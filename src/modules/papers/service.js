@@ -58,7 +58,7 @@ export default class PapersService {
                     published: new Date(entry.published).toISOString().split('T')[0],
                     summary: entry.summary.trim(),
                     link: entry.id,
-                    pdf: pdfLink
+                   
                 };
             });
 

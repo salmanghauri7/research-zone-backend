@@ -90,7 +90,9 @@ export default class chatController {
             );
           }
 
-          const cloudFrontUrl = chatServices.generateCloudFrontUrlForFile(file.key);
+          const cloudFrontUrl = chatServices.generateCloudFrontUrlForFile(
+            file.key,
+          );
 
           return {
             url: cloudFrontUrl, // CloudFront URL
@@ -110,6 +112,41 @@ export default class chatController {
       return apiResponse.error(
         res,
         err.message || "Failed to upload files",
+        err.statusCode || 500,
+      );
+    }
+  }
+
+  static async handleSearchInWorkspace(req, res) {
+    try {
+      const workspaceId = req.params.id;
+      const { query } = req.body;
+      const { limit = 20, cursor } = req.query;
+      const user = req.user;
+
+      if (!query || query.trim() === "") {
+        return apiResponse.error(res, "Search query is required", 400);
+      }
+
+      await chatServices.validateWorkspaceAccess(workspaceId, user.id);
+
+      const { results, nextCursor, hasMore } =
+        await chatServices.searchMessagesInWorkspace(
+          workspaceId,
+          query,
+          limit,
+          cursor,
+        );
+
+      return apiResponse.success(res, "Search completed successfully", 200, {
+        results,
+        cursor: nextCursor,
+        hasMore,
+      });
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || "Failed to search messages",
         err.statusCode || 500,
       );
     }

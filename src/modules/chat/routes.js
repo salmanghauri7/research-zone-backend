@@ -22,4 +22,6 @@ router.post(
   chatController.handleFileUpload,
 );
 
+router.post("/workspace/:id/search", checkAccessToken, chatController.handleSearchInWorkspace);
+
 export default router;

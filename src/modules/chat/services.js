@@ -313,8 +313,8 @@ export default class ChatServices extends BaseRepository {
 
   generateCloudFrontUrlForFile(fileKey) {
     // Validate fileKey exists
-    if (!fileKey || typeof fileKey !== 'string' || fileKey.trim() === '') {
-      throw new ApiError('Invalid or missing fileKey', 400);
+    if (!fileKey || typeof fileKey !== "string" || fileKey.trim() === "") {
+      throw new ApiError("Invalid or missing fileKey", 400);
     }
 
     return generateCloudFrontUrl(fileKey);
@@ -327,7 +327,8 @@ export default class ChatServices extends BaseRepository {
       if (plainMsg.attachments && plainMsg.attachments.length > 0) {
         // Filter out attachments without fileKey and generate URLs for valid ones
         const validAttachments = plainMsg.attachments.filter(
-          (attachment) => attachment.fileKey && attachment.fileKey.trim() !== ''
+          (attachment) =>
+            attachment.fileKey && attachment.fileKey.trim() !== "",
         );
 
         plainMsg.attachments = validAttachments.map((attachment) => ({
@@ -339,5 +340,87 @@ export default class ChatServices extends BaseRepository {
     });
 
     return messagesWithUrls;
+  }
+
+  async searchMessagesInWorkspace(workspaceId, query, limit = 20, cursor) {
+    const parsedLimit = Number.parseInt(limit, 10);
+
+    if (Number.isNaN(parsedLimit) || parsedLimit <= 0) {
+      throw new ApiError("Invalid limit value", 400);
+    }
+
+    if (cursor && !mongoose.Types.ObjectId.isValid(cursor)) {
+      throw new ApiError("Invalid cursor value", 400);
+    }
+
+    const paginationLimit = Math.min(parsedLimit, 50);
+
+    const matchStage = {
+      workspaceId: new mongoose.Types.ObjectId(workspaceId),
+      isDeleted: false,
+    };
+
+    if (cursor) {
+      matchStage._id = { $lt: new mongoose.Types.ObjectId(cursor) };
+    }
+
+    const searchMessages = await Message.aggregate([
+      {
+        $search: {
+          index: "message_search",
+          text: {
+            query: query,
+            path: "content",
+            fuzzy: { maxEdits: 2 }, // Allow for some typos
+          },
+        },
+      },
+      {
+        $match: matchStage,
+      },
+      { $sort: { _id: -1 } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "sender",
+          foreignField: "_id",
+          as: "sender",
+        },
+      },
+      { $unwind: "$sender" },
+      { $limit: paginationLimit + 1 },
+      {
+        $project: {
+          // --- Message Fields (Inclusion) --- (exclusion of attachments for search results)
+          _id: 1,
+          workspaceId: 1,
+          parentMessageId: 1,
+          replyCount: 1,
+          quotedMessageId: 1,
+          content: 1,
+          isEdited: 1,
+          isDeleted: 1,
+          reactions: 1,
+          messageType: 1,
+          voiceDuration: 1,
+          createdAt: 1,
+          updatedAt: 1,
+
+          // --- User Fields (Specific Inclusion) ---
+          "sender._id": 1,
+          "sender.firstName": 1,
+          "sender.profilePictureUrl": 1,
+        },
+      },
+    ]);
+
+    const hasMore = searchMessages.length > paginationLimit;
+    const results = hasMore
+      ? searchMessages.slice(0, paginationLimit)
+      : searchMessages;
+    const nextCursor =
+      hasMore && results.length > 0 ? results[results.length - 1]._id : null;
+
+    return { results, nextCursor, hasMore };
   }
 }
