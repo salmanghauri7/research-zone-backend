@@ -8,6 +8,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { initializeSocket } from "./config/socketConfig.js";
 import { registerChatHandlers } from "./modules/chat/socketHandler.js";
+import "./modules/paper-chat/model.js"; // Initialize ChunkEmbedding collection
 
 const app = express();
 const httpServer = createServer(app);

@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime.js";
 import BaseRepository from "../../utils/baseRepository.js";
@@ -8,6 +7,10 @@ import { invitationTemplate } from "../../utils/emailTemplates/invitationTemp.js
 import { ApiError } from "../../utils/apiError.js";
 import { errorMessages } from "../../constants/messages.js";
 import Message from "../chat/model.js";
+import {
+  buildAllWorkspacesPipeline,
+  buildOwnerWorkspacesPipeline,
+} from "../../aggregations/workspaces/pipelines.js";
 
 dayjs.extend(relativeTime);
 
@@ -26,22 +29,7 @@ export default class workspaceServices extends BaseRepository {
   }
 
   async getOwnerWorkspaces(user) {
-    const pipeline = [
-      {
-        $match: {
-          owner: new mongoose.Types.ObjectId(user.id),
-        },
-      },
-      {
-        $project: {
-          title: 1,
-          owner: 1,
-          createdAt: 1,
-          members: { $size: "$members" },
-          color: 1,
-        },
-      },
-    ];
+    const pipeline = buildOwnerWorkspacesPipeline(user.id);
 
     let workspaces = await this.aggregate(pipeline);
     return workspaces.map((ws) => ({
@@ -51,30 +39,7 @@ export default class workspaceServices extends BaseRepository {
   }
 
   async getAllWorkspaces(user) {
-    const userId = new mongoose.Types.ObjectId(user.id);
-
-    const pipeline = [
-      {
-        $match: {
-          $or: [{ owner: userId }, { "members.user": userId }],
-        },
-      },
-      {
-        $project: {
-          title: 1,
-          owner: 1,
-          createdAt: 1,
-          members: { $size: "$members" },
-          color: 1,
-          isOwner: {
-            $eq: ["$owner", userId],
-          },
-        },
-      },
-      {
-        $sort: { createdAt: -1 },
-      },
-    ];
+    const pipeline = buildAllWorkspacesPipeline(user.id);
 
     let workspaces = await this.aggregate(pipeline);
     return workspaces.map((ws) => ({

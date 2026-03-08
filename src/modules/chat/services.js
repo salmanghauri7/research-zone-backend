@@ -4,6 +4,7 @@ import Message from "./model.js";
 import { ApiError } from "../../utils/apiError.js";
 import BaseRepository from "../../utils/baseRepository.js";
 import { generateCloudFrontUrl } from "../../utils/cloudFrontSigner.js";
+import { buildSearchMessagesPipeline } from "../../aggregations/chat/pipelines.js";
 
 export default class ChatServices extends BaseRepository {
   constructor(model) {
@@ -364,55 +365,13 @@ export default class ChatServices extends BaseRepository {
       matchStage._id = { $lt: new mongoose.Types.ObjectId(cursor) };
     }
 
-    const searchMessages = await Message.aggregate([
-      {
-        $search: {
-          index: "message_search",
-          text: {
-            query: query,
-            path: "content",
-            fuzzy: { maxEdits: 2 }, // Allow for some typos
-          },
-        },
-      },
-      {
-        $match: matchStage,
-      },
-      { $sort: { _id: -1 } },
-      {
-        $lookup: {
-          from: "users",
-          localField: "sender",
-          foreignField: "_id",
-          as: "sender",
-        },
-      },
-      { $unwind: "$sender" },
-      { $limit: paginationLimit + 1 },
-      {
-        $project: {
-          // --- Message Fields (Inclusion) --- (exclusion of attachments for search results)
-          _id: 1,
-          workspaceId: 1,
-          parentMessageId: 1,
-          replyCount: 1,
-          quotedMessageId: 1,
-          content: 1,
-          isEdited: 1,
-          isDeleted: 1,
-          reactions: 1,
-          messageType: 1,
-          voiceDuration: 1,
-          createdAt: 1,
-          updatedAt: 1,
+    const pipeline = buildSearchMessagesPipeline({
+      query,
+      matchStage,
+      paginationLimit,
+    });
 
-          // --- User Fields (Specific Inclusion) ---
-          "sender._id": 1,
-          "sender.firstName": 1,
-          "sender.profilePictureUrl": 1,
-        },
-      },
-    ]);
+    const searchMessages = await this.aggregate(pipeline);
 
     const hasMore = searchMessages.length > paginationLimit;
     const results = hasMore

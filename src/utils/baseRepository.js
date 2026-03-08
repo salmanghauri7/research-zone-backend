@@ -40,10 +40,13 @@ export default class BaseRepository {
    * @param {string | object | Array<string | object>} [populate=""] - Fields to populate.
    * @returns {Promise<Document[]>}
    */
-  async find(query = {}, populate = "", select = "") {
+  async find(query = {}, populate = "", select = "", sort="") {
     let queryBuilder = this.model.find(query);
     if (select) {
       queryBuilder = queryBuilder.select(select);
+    }
+    if (sort) {
+      queryBuilder = queryBuilder.sort(sort);
     }
     if (Array.isArray(populate)) {
       populate.forEach((p) => (queryBuilder = queryBuilder.populate(p)));
