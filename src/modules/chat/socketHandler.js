@@ -7,6 +7,27 @@ import { ApiError } from "../../utils/apiError.js";
 
 const chatServices = new ChatServices();
 
+const getUserId = (user = {}) => user.id?.toString() || user._id?.toString();
+
+const getWorkspaceMemberUserIds = (workspace) => {
+  const memberIds = new Set();
+
+  if (workspace?.owner) {
+    memberIds.add(workspace.owner.toString());
+  }
+
+  if (Array.isArray(workspace?.members)) {
+    for (const member of workspace.members) {
+      const memberId = member?.user?.toString();
+      if (memberId) {
+        memberIds.add(memberId);
+      }
+    }
+  }
+
+  return Array.from(memberIds);
+};
+
 /**
  * Handle join-workspace event
  * @param {Socket} socket - The socket instance
@@ -193,51 +214,53 @@ const sendSelectiveNotifications = async (
   workspace,
 ) => {
   try {
-    const workspaceRoom = io.sockets.adapter.rooms.get(workspaceId);
     const chatRoom = io.sockets.adapter.rooms.get(`${workspaceId}:chat`);
 
-    if (!workspaceRoom || workspaceRoom.size === 0) {
-      console.log(`⚠️ No users in workspace ${workspaceId} to notify`);
+    const workspaceMemberUserIds = getWorkspaceMemberUserIds(workspace);
+    if (workspaceMemberUserIds.length === 0) {
+      console.log(`⚠️ No workspace members found for workspace ${workspaceId}`);
       return;
     }
 
     let notificationsSent = 0;
     const senderIdStr = senderId?.toString();
 
-    console.log(`📊 Workspace ${workspaceId} has ${workspaceRoom.size} users online`);
+    console.log(
+      `📊 Workspace ${workspaceId} has ${workspaceMemberUserIds.length} total member(s)`,
+    );
     if (chatRoom) {
       console.log(`📊 Chat room has ${chatRoom.size} users actively viewing`);
     }
 
-    for (const socketId of workspaceRoom) {
-      const targetSocket = io.sockets.sockets.get(socketId);
-      if (!targetSocket?.user) {
-        continue;
-      }
-
-      const targetUserId =
-        targetSocket.user.id?.toString() || targetSocket.user._id?.toString();
-
+    for (const memberUserId of workspaceMemberUserIds) {
       // Skip sender.
-      if (senderIdStr && targetUserId === senderIdStr) {
+      if (senderIdStr && memberUserId === senderIdStr) {
         continue;
       }
 
-      // Skip users actively viewing chat.
-      if (chatRoom && chatRoom.has(socketId)) {
+      const userRoomName = `user:${memberUserId}`;
+      const userRoomSockets = io.sockets.adapter.rooms.get(userRoomName);
+      if (!userRoomSockets || userRoomSockets.size === 0) {
         continue;
       }
 
-      io.to(socketId).emit("message-notified", {
-        workspaceId,
-        workspaceName: workspace?.title || "Workspace",
-        senderName,
-        messagePreview: message.content?.substring(0, 50) || "New message",
-        messageId: message._id?.toString() || message.id,
-        timestamp: message.createdAt || new Date(),
-      });
+      for (const socketId of userRoomSockets) {
+        // Skip users actively viewing this workspace chat.
+        if (chatRoom && chatRoom.has(socketId)) {
+          continue;
+        }
 
-      notificationsSent += 1;
+        io.to(socketId).emit("message-notified", {
+          workspaceId,
+          workspaceName: workspace?.title || "Workspace",
+          senderName,
+          messagePreview: message.content?.substring(0, 50) || "New message",
+          messageId: message._id?.toString() || message.id,
+          timestamp: message.createdAt || new Date(),
+        });
+
+        notificationsSent += 1;
+      }
     }
 
     console.log(
@@ -480,6 +503,12 @@ export const registerChatHandlers = (io) => {
   io.on("connection", (socket) => {
     // socket.user is attached by socketAuthMiddleware
     const user = socket.user;
+    const userId = getUserId(user);
+
+    if (userId) {
+      socket.join(`user:${userId}`);
+    }
+
     console.log(`🔌 User connected: ${socket.id} (${user.email || user._id})`);
 
     // Register event handlers
