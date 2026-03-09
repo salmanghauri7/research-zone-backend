@@ -63,7 +63,192 @@ const handleJoinWorkspace = async (socket, data) => {
   }
 };
 
-const handleSendMessage = async (socket, data) => {
+/**
+ * Handle join-chat-room event
+ * @param {Socket} socket - The socket instance
+ * @param {Object} data - Event data containing workspaceId
+ */
+const handleJoinChatRoom = async (socket, data) => {
+  try {
+    if (!data) {
+      throw new ApiError("Request data is required", 400);
+    }
+
+    const { workspaceId } = data;
+    const user = socket.user;
+
+    if (!workspaceId) {
+      throw new ApiError("Workspace ID is required", 400);
+    }
+
+    // Validate access before allowing user to join the chat-specific room.
+    await chatServices.validateWorkspaceAccess(workspaceId, user.id);
+
+    const chatRoomName = `${workspaceId}:chat`;
+    socket.join(chatRoomName);
+
+    console.log(
+      `💬 User ${user.email || user._id} joined chat room for workspace: ${workspaceId}`,
+    );
+
+    socket.to(chatRoomName).emit("user-joined-chat", {
+      userId: user._id,
+      email: user.email,
+      workspaceId,
+    });
+  } catch (error) {
+    console.error("Error in join-chat-room handler:", error);
+    socket.emit("join-chat-room-error", {
+      message: error.message || "Failed to join chat room",
+      statusCode: error.statusCode || 500,
+    });
+  }
+};
+
+/**
+ * Handle leave-chat-room event
+ * @param {Socket} socket - The socket instance
+ * @param {Object} data - Event data containing workspaceId
+ */
+const handleLeaveChatRoom = async (socket, data) => {
+  try {
+    if (!data) {
+      return;
+    }
+
+    const { workspaceId } = data;
+    const user = socket.user;
+
+    if (!workspaceId) {
+      return;
+    }
+
+    const chatRoomName = `${workspaceId}:chat`;
+    socket.leave(chatRoomName);
+
+    console.log(
+      `🚪 User ${user.email || user._id} left chat room for workspace: ${workspaceId}`,
+    );
+
+    socket.to(chatRoomName).emit("user-left-chat", {
+      userId: user._id,
+      email: user.email,
+      workspaceId,
+    });
+  } catch (error) {
+    console.error("Error in leave-chat-room handler:", error);
+  }
+};
+
+/**
+ * Handle leave-workspace event
+ * @param {Socket} socket - The socket instance
+ * @param {Object} data - Event data containing workspaceId
+ */
+const handleLeaveWorkspace = async (socket, data) => {
+  try {
+    if (!data) {
+      return;
+    }
+
+    const { workspaceId } = data;
+    const user = socket.user;
+
+    if (!workspaceId) {
+      return;
+    }
+
+    socket.leave(workspaceId);
+    socket.leave(`${workspaceId}:chat`);
+
+    console.log(
+      `🚪 User ${user.email || user._id} left workspace: ${workspaceId}`,
+    );
+
+    socket.to(workspaceId).emit("user-left-workspace", {
+      userId: user._id,
+      email: user.email,
+      workspaceId,
+    });
+  } catch (error) {
+    console.error("Error in leave-workspace handler:", error);
+  }
+};
+
+/**
+ * Send notifications only to workspace members who are online but not in the chat room.
+ * @param {import('socket.io').Server} io - The Socket.IO server instance
+ * @param {string} workspaceId - The workspace ID
+ * @param {string} senderId - Sender user ID
+ * @param {Object} message - Message payload
+ * @param {string} senderName - Sender display name
+ * @param {Object} workspace - Workspace metadata
+ */
+const sendSelectiveNotifications = async (
+  io,
+  workspaceId,
+  senderId,
+  message,
+  senderName,
+  workspace,
+) => {
+  try {
+    const workspaceRoom = io.sockets.adapter.rooms.get(workspaceId);
+    const chatRoom = io.sockets.adapter.rooms.get(`${workspaceId}:chat`);
+
+    if (!workspaceRoom || workspaceRoom.size === 0) {
+      console.log(`⚠️ No users in workspace ${workspaceId} to notify`);
+      return;
+    }
+
+    let notificationsSent = 0;
+    const senderIdStr = senderId?.toString();
+
+    console.log(`📊 Workspace ${workspaceId} has ${workspaceRoom.size} users online`);
+    if (chatRoom) {
+      console.log(`📊 Chat room has ${chatRoom.size} users actively viewing`);
+    }
+
+    for (const socketId of workspaceRoom) {
+      const targetSocket = io.sockets.sockets.get(socketId);
+      if (!targetSocket?.user) {
+        continue;
+      }
+
+      const targetUserId =
+        targetSocket.user.id?.toString() || targetSocket.user._id?.toString();
+
+      // Skip sender.
+      if (senderIdStr && targetUserId === senderIdStr) {
+        continue;
+      }
+
+      // Skip users actively viewing chat.
+      if (chatRoom && chatRoom.has(socketId)) {
+        continue;
+      }
+
+      io.to(socketId).emit("message-notified", {
+        workspaceId,
+        workspaceName: workspace?.title || "Workspace",
+        senderName,
+        messagePreview: message.content?.substring(0, 50) || "New message",
+        messageId: message._id?.toString() || message.id,
+        timestamp: message.createdAt || new Date(),
+      });
+
+      notificationsSent += 1;
+    }
+
+    console.log(
+      `✅ Sent ${notificationsSent} notification(s) for workspace ${workspaceId}`,
+    );
+  } catch (error) {
+    console.error("Error sending selective notifications:", error);
+  }
+};
+
+const handleSendMessage = async (socket, data, io) => {
   try {
     // Validate request data
     if (!data) {
@@ -85,7 +270,10 @@ const handleSendMessage = async (socket, data) => {
     }
 
     // Validate workspace access
-    await chatServices.validateWorkspaceAccess(workspaceId, user.id);
+    const workspace = await chatServices.validateWorkspaceAccess(
+      workspaceId,
+      user.id,
+    );
 
     // Create and save message
     let message = await chatServices.createMessage({
@@ -104,6 +292,15 @@ const handleSendMessage = async (socket, data) => {
     // Emit message to all users in the workspace (including sender)
     socket.to(workspaceId).emit("new-message", message);
     socket.emit("message-sent", message);
+
+    await sendSelectiveNotifications(
+      io,
+      workspaceId,
+      user.id,
+      message,
+      user.firstName || user.email,
+      workspace,
+    );
 
     console.log(
       `📨 Message sent by ${user.email || user.id} in workspace: ${workspaceId}`,
@@ -287,7 +484,10 @@ export const registerChatHandlers = (io) => {
 
     // Register event handlers
     socket.on("join-workspace", (data) => handleJoinWorkspace(socket, data));
-    socket.on("send-message", (data) => handleSendMessage(socket, data));
+    socket.on("join-chat-room", (data) => handleJoinChatRoom(socket, data));
+    socket.on("leave-chat-room", (data) => handleLeaveChatRoom(socket, data));
+    socket.on("leave-workspace", (data) => handleLeaveWorkspace(socket, data));
+    socket.on("send-message", (data) => handleSendMessage(socket, data, io));
     socket.on("delete-message", (data) => handleDeleteMessage(socket, data));
     socket.on("edit-message", (data) => handleEditMessage(socket, data));
     socket.on("typing", (data) => handleTyping(socket, data));
