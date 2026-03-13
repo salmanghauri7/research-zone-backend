@@ -75,6 +75,7 @@ const startServer = async () => {
 
     // Initialize Socket.IO AFTER config is loaded
     const io = initializeSocket(httpServer);
+    app.set("io", io); // Attach io to app so it can be accessed in controllers
     registerChatHandlers(io);
 
     // 3. Start the server ONLY AFTER the DB is connected

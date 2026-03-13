@@ -4,8 +4,10 @@
 
 import ChatServices from "./services.js";
 import { ApiError } from "../../utils/apiError.js";
+import NotificationServices from "../notifications/services.js";
 
 const chatServices = new ChatServices();
+const notificationServices = new NotificationServices();
 
 const getUserId = (user = {}) => user.id?.toString() || user._id?.toString();
 
@@ -238,28 +240,54 @@ const sendSelectiveNotifications = async (
         continue;
       }
 
+      // Check if user is actively viewing this workspace chat
+      let isActiveInChat = false;
       const userRoomName = `user:${memberUserId}`;
       const userRoomSockets = io.sockets.adapter.rooms.get(userRoomName);
-      if (!userRoomSockets || userRoomSockets.size === 0) {
-        continue;
+      
+      if (userRoomSockets && userRoomSockets.size > 0 && chatRoom) {
+        for (const socketId of userRoomSockets) {
+          if (chatRoom.has(socketId)) {
+            isActiveInChat = true;
+            break;
+          }
+        }
       }
 
-      for (const socketId of userRoomSockets) {
-        // Skip users actively viewing this workspace chat.
-        if (chatRoom && chatRoom.has(socketId)) {
-          continue;
+      // If user is not actively viewing the chat, store a notification in DB
+      let createdNotification = null;
+      if (!isActiveInChat) {
+        try {
+          createdNotification = await notificationServices.createNotification({
+            userId: memberUserId,
+            senderId,
+            workspaceId,
+            messageId: message._id || message.id,
+            content: message.content || "New message",
+          });
+        } catch (dbErr) {
+          console.error("Failed to store notification in DB:", dbErr.message);
         }
+      }
 
-        io.to(socketId).emit("message-notified", {
-          workspaceId,
-          workspaceName: workspace?.title || "Workspace",
-          senderName,
-          messagePreview: message.content?.substring(0, 50) || "New message",
-          messageId: message._id?.toString() || message.id,
-          timestamp: message.createdAt || new Date(),
-        });
+      if (!userRoomSockets || userRoomSockets.size === 0) {
+        continue; // User is offline, we've already stored in DB, nothing to emit
+      }
 
-        notificationsSent += 1;
+      // If user is online but not in the active chat room, emit the notification event
+      if (!isActiveInChat) {
+        for (const socketId of userRoomSockets) {
+          io.to(socketId).emit("message-notified", {
+            notificationId: createdNotification?._id,
+            workspaceId,
+            workspaceName: workspace?.title || "Workspace",
+            senderName,
+            messagePreview: message.content?.substring(0, 50) || "New message",
+            messageId: message._id?.toString() || message.id,
+            timestamp: message.createdAt || new Date(),
+          });
+          notificationsSent += 1;
+        }
       }
     }
 
