@@ -1,18 +1,6 @@
 import mongoose from 'mongoose';
 
 const ChunkEmbeddingSchema = new mongoose.Schema({
-  workspaceId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Workspace', // References your existing Workspace model
-    required: true,
-    index: true // Highly recommended for filtering performance
-  },
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // References your existing User model
-    required: true,
-    index: true
-  },
   paperId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Paper', // Optional for now as requested
@@ -29,6 +17,7 @@ const ChunkEmbeddingSchema = new mongoose.Schema({
   metadata: {
     page: { type: Number },
     totalPages: { type: Number },
+    chunkLength: {type: Number}
   },
   createdAt: {
     type: Date,
@@ -36,8 +25,6 @@ const ChunkEmbeddingSchema = new mongoose.Schema({
   }
 });
 
-// Create a compound index for even faster workspace-based lookups
-ChunkEmbeddingSchema.index({ workspaceId: 1, userId: 1 });
 
 const ChunkEmbedding = mongoose.models.ChunkEmbedding || mongoose.model('ChunkEmbedding', ChunkEmbeddingSchema);
 

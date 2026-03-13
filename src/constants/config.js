@@ -20,8 +20,12 @@ export const config = {
   AWS_REGION: process.env.AWS_REGION,
   S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
   CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN,
-  CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY ? process.env.CLOUDFRONT_PRIVATE_KEY.replace(/\\n/g, "\n") : undefined,
+  CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY
+    ? process.env.CLOUDFRONT_PRIVATE_KEY.replace(/\\n/g, "\n")
+    : undefined,
   CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID,
+  EMBEDDING_SERVICE_URL_DEV: process.env.EMBEDDING_SERVICE_URL_DEV,
+  EMBEDDING_SERVICE_URL_PROD: process.env.EMBEDDING_SERVICE_URL_PROD,
 };
 
 export const constants = {
