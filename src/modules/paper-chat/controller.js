@@ -70,4 +70,36 @@ export default class PaperChatController {
       );
     }
   }
+
+  static async chatWithPaper(req, res) {
+    try {
+      const { paperId, question } = req.body;
+      const userId = req.user?.id || req.user?._id;
+
+      if (!paperId) {
+        throw new ApiError("paperId is required", 400);
+      }
+      if (!question) {
+        throw new ApiError("question is required", 400);
+      }
+
+      const conversationHistory =
+        await paperChatService.fetchConversationHistory(paperId, userId);
+
+      const answer = await paperChatService.chatWithPaper({
+        paperId,
+        userId,
+        question,
+        conversationHistory,
+      });
+
+      return apiResponse.success(res, "Message sent successfully", 200, answer);
+    } catch (error) {
+      return apiResponse.error(
+        res,
+        error.message || "Failed to chat with paper",
+        error.statusCode || 500,
+      );
+    }
+  }
 }

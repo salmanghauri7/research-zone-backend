@@ -5,6 +5,7 @@ const conversationSchema = new mongoose.Schema(
     paperId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Paper",
+      index:true,
       required: true,
     },
     userId: {

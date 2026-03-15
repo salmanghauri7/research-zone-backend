@@ -90,4 +90,45 @@ export default class PaperChatService {
       throw new ApiError("Error fetching conversation history", 500);
     }
   }
+
+  /**
+   * Sends a message to the embedding microservice to chat with a paper
+   * @param {Object} params
+   * @param {string} params.paperId
+   * @param {string} params.userId
+   * @param {string} params.question
+   * @param {Array} params.conversationHistory
+   */
+  async chatWithPaper({ paperId, userId, question, conversationHistory }) {
+    const baseUrl = this.getEmbeddingServiceBaseUrl();
+    const endpoint = `${baseUrl}/api/v1/paperChat`;
+
+    let response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paper_id: paperId,
+          user_id: userId,
+          question,
+          conversation_history: conversationHistory,
+        }),
+      });
+    } catch (error) {
+      throw new ApiError("Failed to connect to embedding microservice", 502);
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new ApiError(
+        errorText || "Embedding microservice request failed",
+        response.status || 502,
+      );
+    }
+
+    return await response.json();
+  }
 }

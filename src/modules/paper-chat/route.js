@@ -10,4 +10,5 @@ router.post(
   PaperChatController.createEmbeddings,
 );
 
+router.post("/question", checkAccessToken, PaperChatController.chatWithPaper)
 export default router;
