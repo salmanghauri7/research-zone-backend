@@ -32,12 +32,20 @@ export default class SavedPaperController {
         throw new ApiError(errorMessages.SAVED_PAPER.LINK_REQUIRED, 400);
       }
 
+      let formattedLink = link.trim();
+      if (formattedLink.includes("arxiv.org/abs/")) {
+        formattedLink = formattedLink.replace(
+          "arxiv.org/abs/",
+          "arxiv.org/pdf/",
+        );
+      }
+
       const savedPaper = await savedPaperDb.savePaper({
         workspaceId,
         userId: user.id,
         folderId: folderId || null,
         title: title.trim(),
-        link: link.trim(),
+        link: formattedLink,
         authors: authors || "",
         published: published || "",
       });
@@ -56,7 +64,6 @@ export default class SavedPaperController {
       );
     }
   }
-
 
   /**
    * Move paper to different folder
@@ -122,5 +129,4 @@ export default class SavedPaperController {
       );
     }
   }
-
 }

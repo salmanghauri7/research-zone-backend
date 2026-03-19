@@ -8,11 +8,7 @@ export default class PaperChatService {
     const isProduction = config.NODE_ENV === "production";
 
     if (isProduction) {
-      return (
-        config.EMBEDDING_SERVICE_URL_PROD ||
-        config.EMBEDDING_SERVICE_URL_DEV ||
-        "http://localhost:8000"
-      );
+      return config.EMBEDDING_SERVICE_URL_PROD;
     }
 
     return config.EMBEDDING_SERVICE_URL_DEV || "http://localhost:8000";
@@ -78,12 +74,9 @@ export default class PaperChatService {
   async fetchConversationHistory(paperId, userId) {
     try {
       let recentMessages = await Conversation.find({ paperId, userId })
-        .sort({ createdAt: -1 })
+
         .limit(7)
         .lean();
-
-      // Reverse to chronological order (oldest to newest)
-      recentMessages = recentMessages.reverse();
 
       return recentMessages;
     } catch (error) {
