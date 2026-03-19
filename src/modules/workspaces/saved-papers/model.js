@@ -37,6 +37,12 @@ const savedPaperSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    summary: {
+      type: String,
+    },
+    summaryGenerated: {
+      type: Boolean,
+    },
   },
   { timestamps: true },
 );

@@ -1,7 +1,24 @@
-node_modules
-.env
+# Source control
 .git
 .gitignore
-dockerfile
+
+# Environment variables
+.env
+
+# Dependencies
+node_modules
 npm-debug.log
+
+# Build outputs
 dist
+
+# Docker-related files
+dockerfile
+.dockerignore
+
+# Testing files
+api_testing
+
+# Build and IDE-specific files
+.code
+scripts

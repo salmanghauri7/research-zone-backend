@@ -75,6 +75,11 @@ export const errorMessages = {
     DELETE_FAILED: "Failed to delete saved paper",
     COUNT_FAILED: "Failed to get papers count",
   },
+  PAPER_CHAT: {
+    PAPER_ID_REQUIRED: "Paper ID is required",
+    PDF_URL_REQUIRED: "PDF URL is required",
+    EMBEDDING_CREATE_FAILED: "Failed to create paper embeddings",
+  },
 };
 export const successMessages = {
   USER: {
@@ -110,5 +115,8 @@ export const successMessages = {
     MOVE_SUCCESS: "Paper moved successfully",
     DELETE_SUCCESS: "Saved paper deleted successfully",
     COUNT_SUCCESS: "Papers count fetched successfully",
+  },
+  PAPER_CHAT: {
+    EMBEDDING_CREATED: "Paper embeddings created successfully",
   },
 };
