@@ -30,15 +30,3 @@ const ChunkEmbedding = mongoose.models.ChunkEmbedding || mongoose.model('ChunkEm
 
 export default ChunkEmbedding;
 
-// Create the collection after mongoose connection is ready
-mongoose.connection.once('open', async () => {
-  try {
-    await ChunkEmbedding.createCollection();
-    console.log('✅ ChunkEmbedding collection created successfully.');
-  } catch (error) {
-    // Ignore if collection already exists (error code 48)
-    if (error.code !== 48) {
-      console.error('❌ Error creating ChunkEmbedding collection:', error.message);
-    }
-  }
-});
