@@ -25,6 +25,7 @@ The Papers Module manages research papers in the system. It handles paper upload
 ### Paper Lifecycle
 
 #### 1. Paper Upload
+
 - User uploads a PDF/document file
 - File uploaded to AWS S3 bucket
 - Metadata extracted (title, authors, abstract, etc.)
@@ -33,6 +34,7 @@ The Papers Module manages research papers in the system. It handles paper upload
 - Creator set as paper owner
 
 #### 2. Paper Visibility
+
 - Papers can be:
   - **Private**: Only owner can view/save
   - **Workspace**: Only workspace members can view
@@ -40,11 +42,13 @@ The Papers Module manages research papers in the system. It handles paper upload
 - Visibility controlled via `accessLevel` field
 
 #### 3. Paper Preview
+
 - Metadata available: title, authors, abstract, publication date
 - CloudFront URLs generated for secure file delivery
 - Thumbnails optionally generated
 
 #### 4. Paper Metadata
+
 - Supported fields: title, authors, abstract, publicationDate, pdfUrl, citations, keywords
 - Citations tracked for paper relationships
 - Tags for organization
@@ -52,6 +56,7 @@ The Papers Module manages research papers in the system. It handles paper upload
 ### Search & Discovery
 
 Papers can be searched by:
+
 - Title (full-text search)
 - Authors
 - Keywords
@@ -62,23 +67,25 @@ Papers can be searched by:
 
 ### File Structure
 
-```
-src/modules/papers/
-├── controller.js      # API request handling
-├── model.js          # Paper MongoDB schema
-├── routes.js         # API endpoints
-└── service.js        # Business logic
+```mermaid
+flowchart TD
+  P[src/modules/papers] --> PC[controller.js API handling]
+  P --> PM[model.js Paper schema]
+  P --> PR[routes.js API endpoints]
+  P --> PS[service.js business logic]
 ```
 
 ### Layer Responsibilities
 
 **Controller** (`controller.js`)
+
 - Validate file uploads
 - Check user authentication
 - Call service methods
 - Return formatted responses
 
 **Service** (`service.js`)
+
 - Handle file upload to S3
 - Extract metadata from PDF
 - Manage paper records
@@ -86,6 +93,7 @@ src/modules/papers/
 - Permission checks
 
 **Model** (`model.js`)
+
 - Paper document schema
 - Indexes for search
 - Relationships to users and workspaces
@@ -103,25 +111,25 @@ src/modules/papers/
   pdfUrl: String (required),           // AWS S3 URL
   uploadedBy: ObjectId (ref: User),    // Paper owner
   uploadedAt: Date (default: now),
-  
+
   // Metadata
   publicationDate: Date,
   publicationVenue: String,            // Journal/Conference
   doi: String,                         // Digital Object Identifier
   citations: Number,                   // Citation count
-  
+
   // Organization
   tags: [String],                      // User tags
   keywords: [String],                  // Paper keywords
-  
+
   // Visibility
   accessLevel: String (enum: ['private', 'workspace', 'public']),
   workspaceId: ObjectId (ref: Workspace, conditional),
-  
+
   // File info
   fileSize: Number,                    // In bytes
   mimeType: String,                    // Usually application/pdf
-  
+
   createdAt: Date (auto),
   updatedAt: Date (auto)
 }
@@ -153,6 +161,7 @@ src/modules/papers/
 **Purpose:** Upload a new research paper
 
 **Request:**
+
 ```
 Authorization: Bearer <access-token>
 Content-Type: multipart/form-data
@@ -168,6 +177,7 @@ Fields:
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -188,6 +198,7 @@ Fields:
 ```
 
 **Business Rules:**
+
 - File must be PDF (validate MIME type)
 - File size limit: 50MB
 - Title required, min 5 characters
@@ -196,6 +207,7 @@ Fields:
 - If accessLevel is 'workspace', workspaceId required
 
 **Error Codes:**
+
 - 400: Missing/invalid fields, file too large
 - 401: Not authenticated
 - 403: User not verified
@@ -209,11 +221,13 @@ Fields:
 **Purpose:** Search papers with filters
 
 **Query Parameters:**
+
 ```
 GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 ```
 
 **Parameters:**
+
 - `title`: Search in title (optional)
 - `authors`: Search in authors (optional)
 - `keywords`: Match keywords (optional)
@@ -223,6 +237,7 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 - `page`: Page number (default: 1)
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -249,6 +264,7 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 ```
 
 **Business Rules:**
+
 - Search respects access level (don't show private papers of others)
 - Workspace filter only shows papers accessible to user
 - Full-text search on title and keywords
@@ -260,6 +276,7 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 **Purpose:** Get paper details
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -285,6 +302,7 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 ```
 
 **Permission Rules:**
+
 - Public papers: anyone can view
 - Workspace papers: only workspace members
 - Private papers: only owner
@@ -296,6 +314,7 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 **Purpose:** Update paper metadata
 
 **Request Body:**
+
 ```json
 {
   "title": "Updated Title",
@@ -307,11 +326,13 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 ```
 
 **Business Rules:**
+
 - Only owner can update
 - Cannot update file itself (delete + reupload required)
 - Only verified users can update
 
 **Error Codes:**
+
 - 403: Not owner
 - 404: Paper not found
 
@@ -322,6 +343,7 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 **Purpose:** Delete a paper and remove from S3
 
 **Business Rules:**
+
 - Only owner can delete
 - Deletes from S3 and database
 - Cannot restore (soft delete optional)
@@ -334,6 +356,7 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 **Purpose:** Get signed CloudFront URL for file download
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -345,6 +368,7 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 ```
 
 **Business Rules:**
+
 - URL valid for 1 hour
 - Permission checks enforced
 - Tracks download statistics (optional)
@@ -353,25 +377,15 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 
 ## File Upload Flow
 
-```
-1. Client uploads file with metadata
-         ↓
-   Controller validates:
-   - File exists
-   - File is PDF
-   - Size < 50MB
-         ↓
-   Service receives file
-         ↓
-   2. Upload to AWS S3
-         ↓
-   3. Extract metadata from PDF
-         ↓
-   4. Create paper document with S3 URL
-         ↓
-   5. Return paper ID + details
-         ↓
-   Client receives response
+```mermaid
+flowchart TD
+  A[Client uploads file and metadata] --> B[Controller validates file exists PDF and size less than 50MB]
+  B --> C[Service receives file]
+  C --> D[Upload file to AWS S3]
+  D --> E[Extract metadata from PDF]
+  E --> F[Create paper document with S3 URL]
+  F --> G[Return paper ID and details]
+  G --> H[Client receives response]
 ```
 
 ### S3 Configuration
@@ -396,22 +410,27 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 ## Integration Points
 
 ### 1. Workspace Module
+
 - Papers can be scoped to workspaces
 - Workspace members can access workspace papers
 
 ### 2. Saved Papers Module
+
 - SavedPaper references Paper
 - Same paper can be saved in multiple workspaces
 
 ### 3. Paper Chat Module
+
 - Paper-specific discussions reference papers
 - Comments attached to paper objects
 
 ### 4. User Module
+
 - Papers owned by users
 - Tracks uploader
 
 ### 5. AWS S3
+
 - File storage
 - CloudFront for delivery
 
@@ -422,7 +441,7 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 ```javascript
 // File validation
 if (!file) throw new ApiError("File required", 400);
-if (file.mimetype !== 'application/pdf') throw new ApiError("Only PDF", 400);
+if (file.mimetype !== "application/pdf") throw new ApiError("Only PDF", 400);
 if (file.size > 50 * 1024 * 1024) throw new ApiError("File too large", 413);
 
 // S3 errors
@@ -467,6 +486,7 @@ schema.index({ workspaceId: 1, accessLevel: 1 });
 ### Pagination
 
 Always paginate search results:
+
 ```javascript
 const skip = (page - 1) * limit;
 const papers = await Paper.find(filter)
@@ -486,6 +506,7 @@ const papers = await Paper.find(filter)
 ### Paper Upload Form
 
 **Fields:**
+
 - File input (PDF only)
 - Title (required)
 - Authors (multi-input or textarea)
@@ -496,6 +517,7 @@ const papers = await Paper.find(filter)
 - Workspace selector (if workspace-scoped)
 
 **Upload States:**
+
 - Idle (ready to upload)
 - Uploading (progress bar)
 - Processing (extracting metadata)
@@ -505,6 +527,7 @@ const papers = await Paper.find(filter)
 ### Paper Search/Browse
 
 **Components:**
+
 - Search bar (title, authors)
 - Filter panel (keywords, date, access level)
 - Result list with:
@@ -518,19 +541,17 @@ const papers = await Paper.find(filter)
 ### Paper Detail View
 
 **Sections:**
+
 1. **Metadata**
    - Title, authors
    - Publication info (date, venue)
    - DOI, citations
-   
 2. **Abstract & Keywords**
    - Full abstract
    - Tags/keywords list
-   
 3. **Document**
    - PDF viewer or download button
    - File size, type info
-   
 4. **Actions** (owner only)
    - Edit metadata
    - Change access level
@@ -544,13 +565,13 @@ const papers = await Paper.find(filter)
 
 ## Common Issues & Solutions
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| PDF upload fails | File not actually PDF | Validate MIME type and magic bytes |
-| CloudFront URLs broke | S3 URL changed | Regenerate signed URLs on request |
-| Search slow | Missing indexes | Add text index on title/keywords |
-| Large file timeouts | Upload timeout too short | Increase timeout or use chunked upload |
-| Out of S3 quota | Too many files | Implement cleanup policy |
+| Issue                 | Cause                    | Solution                               |
+| --------------------- | ------------------------ | -------------------------------------- |
+| PDF upload fails      | File not actually PDF    | Validate MIME type and magic bytes     |
+| CloudFront URLs broke | S3 URL changed           | Regenerate signed URLs on request      |
+| Search slow           | Missing indexes          | Add text index on title/keywords       |
+| Large file timeouts   | Upload timeout too short | Increase timeout or use chunked upload |
+| Out of S3 quota       | Too many files           | Implement cleanup policy               |
 
 ## Future Enhancements
 
@@ -568,4 +589,3 @@ const papers = await Paper.find(filter)
 
 **Module Version**: 1.0.0
 **Last Updated**: March 28, 2024
-

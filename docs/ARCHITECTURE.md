@@ -2,115 +2,55 @@
 
 ## Entity Relationship Diagram
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         SYSTEM ENTITIES                         │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+   U[User]
+   W[Workspace]
+   P[Paper]
+   SP[SavedPaper]
+   F[Folder]
+   M[Message Chat]
+   WI[WorkspaceInvitation]
+   PC[PaperChat Conversation]
 
-                          ┌──────────────┐
-                          │    User      │
-                          ├──────────────┤
-                          │ - email      │
-                          │ - firstName  │
-                          │ - username   │
-                          │ - passwordHash
-                          │ - isVerified │
-                          │ - otp        │
-                          │ - authProviders
-                          │ - refreshToken
-                          │ - profilePicture
-                          └──────────────┘
-                              △   │
-                            1 │   │ *
-   ┌──────────────────────────┴───┴──────────────────────────┐
-   │                                                          │
-   │                        owns/manages                      │
-   │                                                          │
-   ▼                                                          ▼
-┌──────────────────┐                                    ┌──────────────────┐
-│   Workspace      │                                    │  SavedPaper      │
-├──────────────────┤     saved into                    ├──────────────────┤
-│ - title          │◄──────────────────┐              │ - paperId        │
-│ - owner *        │◄┐                 │              │ - workspaceId    │
-│ - members[] *    │ │ belongsTo       │              │ - folderId       │
-│ - color          │ │                 │              │ - savedBy        │
-│ - inviteCode     │ │                 │              │ - notes          │
-│ - createdAt      │ │                 │              │ - tags           │
-│ - updatedAt      │ │         ┌───────┴──────────┐   │ - savedAt        │
-└──────────────────┘ │         │                  │   │ - updatedAt      │
-        │            │         │    Paper         │   └──────────────────┘
-        │            │         │                  │
-        │contains    │         └──────────────────┘
-        │            │              △
-        │            └──── linked to ┘
-        │
-        │ contains
-        │
-        ▼
-    ┌──────────────┐
-    │   Folder     │        ┌──────────────────┐
-    ├──────────────┤        │  Message (Chat)  │
-    │ - name       │        ├──────────────────┤
-    │ - workspaceId├───────►│ - workspaceId    │
-    │ - parentFolder         │ - sender         │
-    │ - createdBy  │        │ - content        │
-    │ - createdAt  │        │ - reactions      │
-    └──────────────┘        │ - createdAt      │
-           │ organizes       │ - updatedAt      │
-           │                 └──────────────────┘
-           │
-           ▼
-    ┌──────────────┐
-    │ SavedPaper   │
-    │  (organized) │
-    └──────────────┘
-
-                    ┌───────────────────────┐
-                    │WorkspaceInvitation    │
-                    ├───────────────────────┤
-                    │ - email               │
-                    │ - workspaceId         │
-                    │ - inviterId           │
-                    │ - token               │
-                    │ - status              │
-                    │ - expiresAt           │
-                    │ - acceptedAt          │
-                    └───────────────────────┘
-
-    ┌──────────────────────┐
-    │  PaperChat/          │
-    │  Conversation        │
-    ├──────────────────────┤
-    │ - paperId            │
-    │ - workspaceId        │
-    │ - messages[] (nested)│
-    │ - summaries          │
-    │ - createdAt          │
-    └──────────────────────┘
+   U -->|owns| W
+   U -->|saves| SP
+   U -->|sends| M
+   W -->|contains members| U
+   W -->|contains folders| F
+   W -->|contains messages| M
+   W -->|contains saved papers| SP
+   P -->|linked to| SP
+   F -->|organizes| SP
+   F -->|belongs to workspace| W
+   WI -->|invites user to workspace| W
+   WI -->|invited user email| U
+   PC -->|for workspace| W
+   PC -->|for paper| P
 ```
 
 ## Relationship Types
 
 ### 1:N (One-to-Many) Relationships
 
-| Parent | Child | Field | Notes |
-|--------|-------|-------|-------|
-| User | Workspace | `workspace.owner` | 1 user owns many workspaces |
-| User | Message | `message.sender` | 1 user sends many messages |
-| User | SavedPaper | `savedpaper.savedBy` | 1 user saves many papers |
-| Workspace | Message | `message.workspaceId` | 1 workspace has many messages |
-| Workspace | SavedPaper | `savedpaper.workspaceId` | 1 workspace has many saved papers |
-| Workspace | Folder | `folder.workspaceId` | 1 workspace has many folders |
-| Workspace | Member | `workspace.members[]` | 1 workspace has many members |
-| Paper | SavedPaper | `savedpaper.paperId` | 1 paper can be saved in many workspaces |
-| Folder | SavedPaper | `savedpaper.folderId` | 1 folder contains many papers |
+| Parent    | Child      | Field                    | Notes                                   |
+| --------- | ---------- | ------------------------ | --------------------------------------- |
+| User      | Workspace  | `workspace.owner`        | 1 user owns many workspaces             |
+| User      | Message    | `message.sender`         | 1 user sends many messages              |
+| User      | SavedPaper | `savedpaper.savedBy`     | 1 user saves many papers                |
+| Workspace | Message    | `message.workspaceId`    | 1 workspace has many messages           |
+| Workspace | SavedPaper | `savedpaper.workspaceId` | 1 workspace has many saved papers       |
+| Workspace | Folder     | `folder.workspaceId`     | 1 workspace has many folders            |
+| Workspace | Member     | `workspace.members[]`    | 1 workspace has many members            |
+| Paper     | SavedPaper | `savedpaper.paperId`     | 1 paper can be saved in many workspaces |
+| Folder    | SavedPaper | `savedpaper.folderId`    | 1 folder contains many papers           |
 
 ### M:N (Many-to-Many) Relationships
 
-| Entity 1 | Entity 2 | Through | Type |
-|----------|----------|---------|------|
-| Workspace | User | `workspace.members[]` | Members can belong to multiple workspaces |
-| User | AuthProvider | `user.authProviders[]` | Users can have multiple auth methods |
+| Entity 1  | Entity 2     | Through                | Type                                      |
+| --------- | ------------ | ---------------------- | ----------------------------------------- |
+| Workspace | User         | `workspace.members[]`  | Members can belong to multiple workspaces |
+| User      | AuthProvider | `user.authProviders[]` | Users can have multiple auth methods      |
 
 ### Nested/Embedded Relationships
 
@@ -138,267 +78,128 @@ conversation.messages = [
 
 ### Authentication System
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    AUTHENTICATION FLOW                      │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+   participant C as Client
+   participant S as Server
+   participant D as Database
 
-CLIENT                          SERVER                    DATABASE
-   │                               │                           │
-   ├─ POST /signup ─────────────►  │                           │
-   │  (email, password, name)      ├─ Validate input           │
-   │                               │                           │
-   │                               ├─ Generate OTP             │
-   │                               ├─ Hash password            │
-   │                               ├─ Create/Update User ──────►│
-   │                               │                    Create  │
-   │                               ├─ Send email (OTP)         │
-   │                               │                           │
-   │  ◄─ Return signup-token ──────┤                           │
-   │  (valid 20 min)               │                           │
-   │                               │                           │
-   │ [User enters OTP]             │                           │
-   │                               │                           │
-   ├─ POST /verify-otp ────────►   │                           │
-   │  (otp)                       ├─ Verify OTP               │
-   │  Header: signup-token        ├─ Check expiry             │
-   │                              ├─ Set isVerified=true ─────►│
-   │                              ├─ Generate tokens          │
-   │                              ├─ Create personal workspace │
-   │                              │                           │
-   │  ◄─ Return ─────────────────  │                           │
-   │  - accessToken               │                           │
-   │  - refreshToken (cookie)     │                           │
-   │  - user profile              │                           │
-   │                              │                           │
-   │ [Save tokens]                │                           │
-   │ [Authenticated]              │                           │
+   C->>S: POST /signup (email, password, name)
+   S->>S: Validate input
+   S->>S: Generate OTP and hash password
+   S->>D: Create/Update user
+   S->>S: Send OTP email
+   S-->>C: Return signup token (20 min)
+
+   C->>S: POST /verify-otp (otp + signup-token)
+   S->>S: Verify OTP and expiry
+   S->>D: Set isVerified true
+   S->>S: Generate access and refresh tokens
+   S->>S: Create personal workspace
+   S-->>C: Return user profile + access token + refresh cookie
 ```
 
 ### Workspace Invitation System
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│              WORKSPACE INVITATION FLOW                      │
-└──────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+   participant O as Owner
+   participant S as Server
+   participant I as Invitee
+   participant D as Database
 
-OWNER                    SERVER                INVITEE          DB
-   │                        │                    │              │
-   ├─ POST /invite ────────►│                    │              │
-   │  {email}               ├─ Verify owner      │              │
-   │                        ├─ Check duplicates  │              │
-   │                        ├─ Create invitation────────────────►│
-   │                        ├─ Generate token    │              │
-   │                        ├─ Send email ──────────────────────►│
-   │                        │  (with invite link)INVITEE        │
-   │  ◄─ Success ───────────┤                    │              │
-   │                        │                  Clicks link      │
-   │                        │                    │              │
-   │                        │◄─ GET /invitations/verify ┐       │
-   │                        │  {token}          │       │       │
-   │                        ├─ Verify token    │       │       │
-   │                        │ ─────────────────────────►│       │
-   │                        │  Returns workspace info   │       │
-   │                        │                  │       │       │
-   │                        │ Shows preview   │       │       │
-   │                        │                  │       │       │
-   │                        │◄─ POST /invitations/accept       │
-   │                        │  {token}          │              │
-   │                        ├─ Verify token    │              │
-   │                        ├─ Check auth      │              │
-   │                        ├─ Add to members ────────────────►│
-   │                        ├─ Update invitation status        │
-   │                        │  ─────────────────────────►      │
-   │                        │  (accepted, acceptedAt)          │
-   │  ◄─ Accept confirmed ──┤                    │              │
-   │                        ├─ Return workspace details        │
-   │                        │                    │              │
-   │                        │                  [User added]    │
-   │                        │                    │              │
-   │ [Workspace updated]    │                    │              │
+   O->>S: POST /invite {email}
+   S->>S: Verify owner and check duplicates
+   S->>D: Create invitation with token
+   S-->>I: Send invitation email link
+   S-->>O: Invitation sent success
+
+   I->>S: GET /invitations/verify {token}
+   S->>S: Verify token
+   S-->>I: Return workspace preview
+
+   I->>S: POST /invitations/accept {token}
+   S->>S: Verify token and auth
+   S->>D: Add user to workspace members
+   S->>D: Update invitation status accepted
+   S-->>I: Return workspace details
 ```
 
 ### Workspace Member Access
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│         WORKSPACE MEMBER ACCESS CONTROL                     │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+   A[Endpoint request with auth token] --> B[Permission check]
+   B --> C{Is owner}
+   C -->|Yes| D[Allow owner actions]
+   C -->|No| E{Is in workspace members}
+   E -->|Yes| F[Allow member actions]
+   E -->|No| G[Deny access or redirect]
 
-Endpoint Request with Auth Token
-         │
-         ▼
-┌─────────────────────▐
-│  Permission Check   │
-└─────────────────────┘
-         │
-     ┌───┴───┐
-     │       │
-     ▼       ▼
-IS_OWNER  IN_MEMBERS
-     │       │
-     │       ├─► Check workspace.members[]
-     │       │   Contains current user?
-     │       │
-     │       ▼
-     │   ┌──────────────┐
-     │   │ YES allowed │
-     │   └──────────────┘
-     │       │
-     │       ▼
-     ▼   Check action
-Can modify: fields
-- Can invite/remove members
-- Can delete workspace
-- Can create folders
-- Can save papers
-- Can chat
+   D --> D1[Invite or remove members]
+   D --> D2[Delete workspace]
+   D --> D3[Create folders save papers chat]
 
-Regular member can:
-- View workspace content
-- Save papers
-- Create folders
-- Organize papers
-- Participate in chat
+   F --> F1[View workspace]
+   F --> F2[Save and organize papers]
+   F --> F3[Create folders and chat]
 
-Non-member:
-- Denied access
-- Redirect to login or
-- If invited:
-  - Can verify token
-  - Can join workspace
+   G --> G1[Can verify invitation token]
+   G --> G2[Can join if invited]
 ```
 
 ## Data State Transitions
 
 ### User State Diagram
 
-```
-         ┌─────────────┐
-         │   CREATED   │
-         │isVerified:  │
-         │   false     │
-         └─────────────┘
-                │
-      POST /verify-otp
-         with valid OTP
-                │
-                ▼
-         ┌─────────────┐
-         │  VERIFIED   │
-         │isVerified:  │
-         │   true      │
-         │ refreshToken│
-         │   stored    │
-         └─────────────┘
-                │
-         Can use app features
-         Can access workspaces
-         Can chat
-         Tokens can refresh
+```mermaid
+flowchart TD
+  A[Created user isVerified false] --> B[POST verify-otp with valid OTP]
+  B --> C[Verified user isVerified true]
+  C --> D[Refresh token stored]
+  D --> E[User can access app features and workspaces and chat]
 ```
 
 ### Workspace Invitation State Diagram
 
-```
-         ┌─────────────┐
-         │   PENDING   │
-         │ (invited)   │
-         │expiresAt:   │
-         │7 days later │
-         └─────────────┘
-            │       │
-      ACCEPT │       │ EXPIRE
-            │       │ (auto)
-            ▼       ▼
-      ┌──────┐  ┌─────────┐
-      │ACCEPT│  │ EXPIRED │
-      │      │  │(invalid)│
-      └──────┘  └─────────┘
-        │
-        ▼
-    ┌──────────┐
-    │WORKSPACE │
-    │ MEMBER   │
-    └──────────┘
+```mermaid
+flowchart TD
+   A[Pending invitation invited expires in 7 days] -->|Accept| B[Accepted]
+   A -->|Expire auto| C[Expired invalid]
+   B --> D[Workspace member]
 ```
 
 ### Workspace Operation Permissions
 
-```
-                    ┌─────────────────┐
-                    │  Workspace Op   │
-                    └─────────────────┘
-                            │
-                    ┌───────┴────────┐
-                    │                │
-            OWNER_ONLY          MEMBER_OK
-                    │                │
-        ┌───────────┴──────────┐     │
-        │                      │     │
-        ▼                      ▼     ▼
-   - Invite            - Delete WS - View
-   - Remove            - Edit name - Save papers
-   - Transfer          - Change color - Chat
-     ownership         - Manage roles - Create folders
-                       - Archive     - Edit own papers
+```mermaid
+flowchart TD
+  A[Workspace operation] --> B[Owner only actions]
+  A --> C[Member allowed actions]
+
+  B --> B1[Invite and remove members]
+  B --> B2[Transfer ownership]
+  B --> B3[Delete workspace edit name color roles archive]
+
+  C --> C1[View workspace]
+  C --> C2[Save papers and chat]
+  C --> C3[Create folders and edit own papers]
 ```
 
 ## Request/Response Flow
 
 ### Typical Protected Endpoint Flow
 
-```
-1. Client sends Request
-   ├─ Headers: { Authorization: "Bearer <token>" }
-   ├─ Body: { data }
-   └─ Params: { id }
-
-2. Router matches endpoint
-   └─ Calls middleware chain
-
-3. Middleware: checkAccessToken
-   ├─ Extract token from header
-   ├─ Verify JWT signature
-   ├─ Decode token
-   ├─ Check expiry
-   └─ Set req.user = decoded payload
-
-4. Controller executes
-   ├─ Validate request body
-   ├─ Call service method
-   └─ Pass req.user to service
-
-5. Service layer executes
-   ├─ Check permissions (req.user)
-   ├─ Validate business rules
-   ├─ Call database methods
-   └─ Return result/throw error
-
-6. BaseRepository queries MongoDB
-   ├─ Execute CRUD operation
-   ├─ Return result/throw error
-   └─ Response to service
-
-7. Service processes result
-   ├─ Format response
-   ├─ Catch errors
-   └─ Return to controller
-
-8. Controller handles response
-   ├─ Format API response
-   ├─ Set HTTP status
-   └─ Send to client
-
-9. Response sent to Client
-   ├─ Status code
-   ├─ Body: { success, message, data }
-   └─ Cookies (if applicable)
-
-10. Client handles response
-    ├─ Store tokens if present
-    ├─ Update UI state
-    └─ Handle errors if any
+```mermaid
+flowchart TD
+  A[Client request with headers body params] --> B[Router matches endpoint]
+  B --> C[Middleware checkAccessToken]
+  C --> D[Controller validates input and calls service]
+  D --> E[Service checks permissions and business rules]
+  E --> F[BaseRepository executes database operation]
+  F --> G[Service formats result or throws]
+  G --> H[Controller formats API response]
+  H --> I[Response status body cookies sent to client]
+  I --> J[Client stores tokens updates UI handles errors]
 ```
 
 ## Database Query Patterns
@@ -418,10 +219,7 @@ const user = await userDb.findOne({ email });
 const user = await userDb.findById(userId);
 
 // Update
-await userDb.updateOne(
-  { _id: userId },
-  { $set: { isVerified: true } }
-);
+await userDb.updateOne({ _id: userId }, { $set: { isVerified: true } });
 
 // Delete
 await userDb.deleteOne({ _id: userId });
@@ -445,10 +243,7 @@ const workspaces = await workspaceDb.aggregate(pipeline);
 
 ```javascript
 // Update multiple documents
-await Model.updateMany(
-  { condition },
-  { $set: { field: value } }
-);
+await Model.updateMany({ condition }, { $set: { field: value } });
 
 // Delete multiple
 await Model.deleteMany({ condition });
@@ -478,18 +273,21 @@ try {
 **No caching currently implemented, but recommended for:**
 
 1. **User Profile** (refresh on logout)
+
    ```javascript
    // Cache: user_{id}
    // TTL: 1 hour or refresh on changes
    ```
 
 2. **Workspace List** (refresh on workspace changes)
+
    ```javascript
    // Cache: ws_list_{userId}
    // TTL: 5 minutes or invalidate on ops
    ```
 
 3. **Member List** (refresh on invite/remove)
+
    ```javascript
    // Cache: ws_{wsId}_members
    // TTL: 10 minutes or invalidate
@@ -517,16 +315,19 @@ try {
 ### Optimization Opportunities
 
 1. **Redis caching layer**
+
    ```javascript
    // Cache tokens, user profiles, workspace lists
    ```
 
 2. **Database sharding**
+
    ```javascript
    // Shard by workspaceId for saved papers
    ```
 
 3. **Pagination**
+
    ```javascript
    // Implement limit/offset for large datasets
    ```
@@ -539,85 +340,30 @@ try {
 
 ## Error Handling Flow
 
-```
-Error occurs in Service/Controller
-         │
-         ▼
-    ApiError instance
-         │
-    Custom message
-    statusCode (4xx/5xx)
-    errorCode (for frontend)
-         │
-         ▼
-    Controller catches
-         │
-    Formats response:
-    {
-      success: false,
-      message: "...",
-      statusCode,
-      code
-    }
-         │
-         ▼
-    Global error handler
-    (if it bubbles up)
-         │
-         ▼
-    Client receives
-    error response
-         │
-         ▼
-    Frontend handles:
-    - Shows error message
-    - Suggests action
-    - Logs to monitoring
+```mermaid
+flowchart TD
+  A[Error occurs in service or controller] --> B[ApiError instance]
+  B --> C[Message statusCode errorCode]
+  C --> D[Controller catches and formats error response]
+  D --> E[Global error handler if bubbled]
+  E --> F[Client receives error response]
+  F --> G[Frontend shows message suggests action logs monitoring]
 ```
 
 ## Security Layers
 
-```
-┌────────────────────────────────────────┐
-│     Incoming Request                   │
-├────────────────────────────────────────┤
-│                                        │
-│ 1. CORS Validation                     │
-│    └─ Check origin                     │
-│                                        │
-│ 2. Body Parser                         │
-│    └─ Limit size, parse JSON           │
-│                                        │
-│ 3. Auth Middleware                     │
-│    └─ Verify JWT signature             │
-│    └─ Check expiry                     │
-│    └─ Extract user                     │
-│                                        │
-│ 4. Input Validation                    │
-│    └─ Schema validation (Zod)          │
-│    └─ Type checking                    │
-│    └─ XSS prevention                   │
-│                                        │
-│ 5. Business Logic                      │
-│    └─ Permission checks                │
-│    └─ Rate limiting (if needed)        │
-│    └─ Resource ownership               │
-│                                        │
-│ 6. Database Operations                 │
-│    └─ Parameterized queries (Mongoose) │
-│    └─ SQL injection prevention         │
-│    └─ Data sanitization                │
-│                                        │
-│ 7. Response                            │
-│    └─ HTTPS only (production)          │
-│    └─ Security headers                 │
-│    └─ HTTP-only cookies                │
-│                                        │
-└────────────────────────────────────────┘
+```mermaid
+flowchart TD
+   A[Incoming request] --> B[CORS validation check origin]
+   B --> C[Body parser size limits and JSON parse]
+   C --> D[Auth middleware verify JWT expiry extract user]
+   D --> E[Input validation schema type and XSS checks]
+   E --> F[Business logic permission and ownership checks]
+   F --> G[Database operations with sanitized queries]
+   G --> H[Secure response HTTPS headers HTTP-only cookies]
 ```
 
 ---
 
 **Architecture Version**: 1.0.0
 **Last Updated**: March 28, 2024
-

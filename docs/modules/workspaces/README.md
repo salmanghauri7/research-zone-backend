@@ -11,6 +11,7 @@ The Workspaces Module enables users to create collaborative workspaces, manage t
 ### Workspace Lifecycle
 
 #### 1. Workspace Creation
+
 - User creates a new workspace with a title
 - Creator automatically becomes the **owner**
 - Creator is added to members list
@@ -21,6 +22,7 @@ The Workspaces Module enables users to create collaborative workspaces, manage t
 #### 2. Access Control & Permissions
 
 **Owner Permissions:**
+
 - Create/edit/delete workspace
 - Invite new members via email
 - Remove members from workspace
@@ -30,6 +32,7 @@ The Workspaces Module enables users to create collaborative workspaces, manage t
 - Access all workspace data
 
 **Member Permissions:**
+
 - View workspace and its contents
 - Save/organize papers within workspace
 - Participate in paper-chat discussions
@@ -39,6 +42,7 @@ The Workspaces Module enables users to create collaborative workspaces, manage t
 #### 3. Workspace Invitation System
 
 **Invitation Flow:**
+
 1. Owner requests to invite user by email
 2. System checks:
    - User is owner of workspace
@@ -58,6 +62,7 @@ The Workspaces Module enables users to create collaborative workspaces, manage t
 7. User added to workspace members
 
 **Invitation States:**
+
 - `pending`: Created, awaiting user action
 - `accepted`: User joined workspace
 - `declined`: User rejected invitation (if applicable)
@@ -66,12 +71,14 @@ The Workspaces Module enables users to create collaborative workspaces, manage t
 #### 4. Workspace Organization
 
 **Folders Module** (`workspaces/folders/`):
+
 - Users create folders within workspaces
 - Folders organize saved papers
 - Hierarchical structure (parent-child folders possible)
 - Folder ownership tied to creator
 
 **Saved Papers Module** (`workspaces/saved-papers/`):
+
 - Papers saved to specific workspaces
 - Accessible by all workspace members
 - Can be organized into folders
@@ -88,28 +95,31 @@ The Workspaces Module enables users to create collaborative workspaces, manage t
 
 ### File Structure
 
-```
-src/modules/workspaces/
-├── controller.js           # API request handlers
-├── model.js               # Workspace MongoDB schema
-├── routes.js              # Workspace endpoints
-├── services.js            # Business logic
-├── invitationModel.js      # Invitation schema
-├── folders/
-│   ├── controller.js
-│   ├── model.js
-│   ├── routes.js
-│   └── services.js
-└── saved-papers/
-    ├── controller.js
-    ├── model.js
-    ├── routes.js
-    └── services.js
+```mermaid
+flowchart TD
+  W[src/modules/workspaces] --> WC[controller.js API handlers]
+  W --> WM[model.js Workspace schema]
+  W --> WR[routes.js workspace endpoints]
+  W --> WS[services.js business logic]
+  W --> WI[invitationModel.js invitation schema]
+  W --> WF[folders]
+  W --> WSP[saved-papers]
+
+  WF --> WFC[controller.js]
+  WF --> WFM[model.js]
+  WF --> WFR[routes.js]
+  WF --> WFS[services.js]
+
+  WSP --> WSPC[controller.js]
+  WSP --> WSPM[model.js]
+  WSP --> WSPR[routes.js]
+  WSP --> WSPS[services.js]
 ```
 
 ### Layer Responsibilities
 
 **Controller Layer** (`controller.js`)
+
 - Validates incoming requests
 - Extracts user from request context
 - Calls appropriate service methods
@@ -117,6 +127,7 @@ src/modules/workspaces/
 - Error handling and HTTP status codes
 
 **Service Layer** (`services.js`)
+
 - Extends BaseRepository for database operations
 - Implements workspace creation logic
 - Member invitation and acceptance logic
@@ -125,12 +136,14 @@ src/modules/workspaces/
 - Email notification logic
 
 **Model Layer** (`model.js`)
+
 - Workspace schema definition
 - Indexes for performance optimization
 - References to User model
 - Pre-save hooks for defaults (color assignment)
 
 **Invitation Model** (`invitationModel.js`)
+
 - Separate collection for invitation records
 - Token generation and expiry
 - Status tracking
@@ -215,6 +228,7 @@ src/modules/workspaces/
 **Purpose:** Create a new workspace
 
 **Request Body:**
+
 ```json
 {
   "title": "AI Research 2024"
@@ -222,11 +236,13 @@ src/modules/workspaces/
 ```
 
 **Request Headers:**
+
 ```
 Authorization: Bearer <access-token>
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -250,6 +266,7 @@ Authorization: Bearer <access-token>
 ```
 
 **Business Rules:**
+
 - Authenticated user required (via middleware)
 - Title is required and must not be empty
 - Creator becomes owner and first member
@@ -257,6 +274,7 @@ Authorization: Bearer <access-token>
 - Invite code is auto-generated (UUID)
 
 **Error Codes:**
+
 - 400: Title not provided
 - 401: No authentication token
 - 500: Database error
@@ -268,11 +286,13 @@ Authorization: Bearer <access-token>
 **Purpose:** Get all workspaces owned by the current user
 
 **Request Headers:**
+
 ```
 Authorization: Bearer <access-token>
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -291,12 +311,14 @@ Authorization: Bearer <access-token>
 ```
 
 **Business Rules:**
+
 - Only returns workspaces where user is owner
 - Includes member count (from aggregation)
 - Includes saved paper count
 - CreatedAt formatted as relative time ("1 week ago")
 
 **Error Codes:**
+
 - 401: Invalid/expired token
 - 500: Database error
 
@@ -307,11 +329,13 @@ Authorization: Bearer <access-token>
 **Purpose:** Get all workspaces the user is member of (owned + joined)
 
 **Request Headers:**
+
 ```
 Authorization: Bearer <access-token>
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -334,12 +358,14 @@ Authorization: Bearer <access-token>
 ```
 
 **Business Rules:**
+
 - Returns both owned and joined workspaces
 - `isOwner` flag indicates ownership status
 - Aggregation pipeline handles owner detection
 - Minimal data returned (for sidebar/list display)
 
 **Error Codes:**
+
 - 401: Invalid/expired token
 - 500: Database error
 
@@ -350,11 +376,13 @@ Authorization: Bearer <access-token>
 **Purpose:** Send invitation to join workspace
 
 **Route Parameters:**
+
 ```
 workspaceId: ID of workspace to invite user to
 ```
 
 **Request Body:**
+
 ```json
 {
   "email": "colleague@example.com"
@@ -362,11 +390,13 @@ workspaceId: ID of workspace to invite user to
 ```
 
 **Request Headers:**
+
 ```
 Authorization: Bearer <access-token>
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -384,6 +414,7 @@ Authorization: Bearer <access-token>
 ```
 
 **Business Rules:**
+
 - Only workspace owner can invite
 - Target email must not be already a member
 - No pending invitation should exist for that email
@@ -391,6 +422,7 @@ Authorization: Bearer <access-token>
 - Email is sent with invitation link
 
 **Validation Checks:**
+
 1. Email provided in request
 2. Workspace ID provided in URL
 3. Workspace exists
@@ -399,6 +431,7 @@ Authorization: Bearer <access-token>
 6. No pending invitation exists
 
 **Error Codes:**
+
 - 400: Email not provided or already a member
 - 403: User is not workspace owner
 - 404: Workspace not found
@@ -412,6 +445,7 @@ Authorization: Bearer <access-token>
 **Purpose:** Verify invitation token (shows workspace details)
 
 **Request Body:**
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -419,6 +453,7 @@ Authorization: Bearer <access-token>
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -438,11 +473,13 @@ Authorization: Bearer <access-token>
 ```
 
 **Business Rules:**
+
 - Token must not be expired (7-day window)
 - Returns workspace details for preview
 - Used before user actually accepts invitation
 
 **Error Codes:**
+
 - 400: Token not provided or expired
 - 404: Invitation not found
 - 500: Database error
@@ -454,6 +491,7 @@ Authorization: Bearer <access-token>
 **Purpose:** Accept workspace invitation and join workspace
 
 **Request Body:**
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -461,11 +499,13 @@ Authorization: Bearer <access-token>
 ```
 
 **Request Headers:**
+
 ```
 Authorization: Bearer <access-token>
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -482,6 +522,7 @@ Authorization: Bearer <access-token>
 ```
 
 **Business Rules:**
+
 - User must be authenticated
 - Token must be valid and not expired
 - User email must match invitation email
@@ -490,6 +531,7 @@ Authorization: Bearer <access-token>
 - User is added to accept timestamp
 
 **Error Codes:**
+
 - 400: Token invalid or expired
 - 401: User not authenticated
 - 404: Invitation or workspace not found
@@ -505,6 +547,7 @@ Authorization: Bearer <access-token>
 **Purpose:** Get detailed workspace list for workspace owner view
 
 **Steps:**
+
 1. Match workspaces where `owner == userId`
 2. Lookup user details (owner info)
 3. Lookup all member user details
@@ -513,6 +556,7 @@ Authorization: Bearer <access-token>
 6. Project only needed fields
 
 **Returned Fields:**
+
 - Workspace ID, title, color
 - Member list with details
 - Member count
@@ -524,12 +568,14 @@ Authorization: Bearer <access-token>
 **Purpose:** Get workspaces for sidebar/list view (owned + joined)
 
 **Steps:**
+
 1. Match workspaces where user is in members OR user is owner
 2. Add flag `isOwner` based on owner field
 3. Lookup owner details
 4. Project minimal fields for UI
 
 **Returned Fields:**
+
 - Workspace ID, title, color
 - Owner details
 - isOwner flag (true/false)
@@ -541,6 +587,7 @@ Authorization: Bearer <access-token>
 **Subject:** `Invitation to join {workspaceTitle}`
 
 **HTML Body Contains:**
+
 - Workspace title
 - Inviter name
 - "Join Workspace" button with token link
@@ -548,6 +595,7 @@ Authorization: Bearer <access-token>
 - Option to login/signup if needed
 
 **Email Configuration:**
+
 - Service: Nodemailer
 - Template: `src/utils/emailTemplates/invitationTemp.js`
 - Sent from: Admin email (from config)
@@ -556,24 +604,25 @@ Authorization: Bearer <access-token>
 
 ## Permission Matrix
 
-| Action | Owner | Member | Non-Member |
-|--------|-------|--------|-----------|
-| View workspace | ✅ | ✅ | ❌ |
-| View members | ✅ | ✅ | ❌ |
-| Invite users | ✅ | ❌ | ❌ |
-| Remove members | ✅ | ❌ | ❌ |
-| Delete workspace | ✅ | ❌ | ❌ |
-| Save papers | ✅ | ✅ | ❌ |
-| Chat in workspace | ✅ | ✅ | ❌ |
-| Create folders | ✅ | ✅ | ❌ |
-| Edit folder | Creator | ❌ | ❌ |
-| Delete folder | Creator | ❌ | ❌ |
+| Action            | Owner   | Member | Non-Member |
+| ----------------- | ------- | ------ | ---------- |
+| View workspace    | ✅      | ✅     | ❌         |
+| View members      | ✅      | ✅     | ❌         |
+| Invite users      | ✅      | ❌     | ❌         |
+| Remove members    | ✅      | ❌     | ❌         |
+| Delete workspace  | ✅      | ❌     | ❌         |
+| Save papers       | ✅      | ✅     | ❌         |
+| Chat in workspace | ✅      | ✅     | ❌         |
+| Create folders    | ✅      | ✅     | ❌         |
+| Edit folder       | Creator | ❌     | ❌         |
+| Delete folder     | Creator | ❌     | ❌         |
 
 ## UI Specifications
 
 ### Workspace Dashboard
 
 **Components:**
+
 1. **Workspace List/Sidebar**
    - List of all workspaces (owned + joined)
    - Color-coded workspace icons
@@ -597,32 +646,38 @@ Authorization: Bearer <access-token>
 ### Create Workspace Modal
 
 **Form Fields:**
+
 - Workspace title (text input, required)
 - Description (optional textarea)
 - Privacy setting (private/public dropdown)
 - Color selector (visual palette)
 
 **Actions:**
+
 - Create button
 - Cancel button
 
 **Validation:**
+
 - Title required and min 3 characters
 - Real-time availability check (if needed)
 
 ### Invite Members Modal
 
 **Form Fields:**
+
 - Email input (can be single or comma-separated for bulk)
 - Optional message to invitee
 - Permission level selector (Member/Editor/etc)
 
 **Actions:**
+
 - Send invite button
 - Preview invitees count
 - Cancel button
 
 **After Send:**
+
 - Show success message
 - Display pending invitations list
 - Show "Copy invite link" option (if using invite codes)
@@ -630,6 +685,7 @@ Authorization: Bearer <access-token>
 ### Members List
 
 **For Each Member:**
+
 - User avatar
 - User name
 - Email
@@ -640,6 +696,7 @@ Authorization: Bearer <access-token>
   - Email button
 
 **Pending Invitations Section:**
+
 - Email address
 - Sent date
 - Expiry countdown
@@ -649,12 +706,14 @@ Authorization: Bearer <access-token>
 ### Folders View
 
 **Tree Structure:**
+
 - Root level folders
 - Expandable/collapsible folder items
 - Paper count indicator per folder
 - Drag-and-drop for organizing
 
 **Actions:**
+
 - New folder button
 - Rename folder (creator/owner only)
 - Delete folder (creator/owner only, with confirmation)
@@ -664,6 +723,7 @@ Authorization: Bearer <access-token>
 ### Settings (Owner Only)
 
 **Sections:**
+
 1. **Workspace Info**
    - Edit title
    - Change color
@@ -685,23 +745,25 @@ Authorization: Bearer <access-token>
 ## Socket.io Events
 
 **Workspace-Related Events (if implemented):**
+
 ```javascript
 // User joins workspace
-socket.emit("workspace:user-joined", { workspaceId, userId, userName })
+socket.emit("workspace:user-joined", { workspaceId, userId, userName });
 
 // Invitation sent
-socket.emit("workspace:invitation-sent", { workspaceId, email })
+socket.emit("workspace:invitation-sent", { workspaceId, email });
 
 // Member removed
-socket.emit("workspace:member-removed", { workspaceId, userId })
+socket.emit("workspace:member-removed", { workspaceId, userId });
 
 // Workspace updated
-socket.emit("workspace:updated", { workspaceId, workspaceData })
+socket.emit("workspace:updated", { workspaceId, workspaceData });
 ```
 
 ## State Management Recommendations
 
 **Redux/Context Store:**
+
 ```javascript
 {
   workspaces: {
@@ -721,13 +783,13 @@ socket.emit("workspace:updated", { workspaceId, workspaceData })
 
 ## Common Issues & Solutions
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Email not sent | SMTP misconfigured | Check email service config |
-| Invitation expired | 7-day window passed | User must request new invite |
-| User can't join workspace | Invitation email mismatch | Ensure signup with same email |
-| Duplicate members | Race condition | Use database unique constraint |
-| Owner left workspace | No owner assigned | Auto-transfer ownership to oldest member |
+| Issue                     | Cause                     | Solution                                 |
+| ------------------------- | ------------------------- | ---------------------------------------- |
+| Email not sent            | SMTP misconfigured        | Check email service config               |
+| Invitation expired        | 7-day window passed       | User must request new invite             |
+| User can't join workspace | Invitation email mismatch | Ensure signup with same email            |
+| Duplicate members         | Race condition            | Use database unique constraint           |
+| Owner left workspace      | No owner assigned         | Auto-transfer ownership to oldest member |
 
 ## Future Enhancements
 
@@ -746,4 +808,3 @@ socket.emit("workspace:updated", { workspaceId, workspaceData })
 - **dayjs**: Date formatting and relative time (v1.11.19)
 - **nodemailer**: Email sending (v7.0.10)
 - **jsonwebtoken**: Token verification (v9.0.2)
-

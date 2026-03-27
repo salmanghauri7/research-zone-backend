@@ -59,17 +59,18 @@ The Authentication Module is a critical component of the Research Zone backend t
 
 ### File Structure
 
-```
-src/modules/users/
-├── controller.js      # API request handlers, request/response validation
-├── model.js          # MongoDB schema and User model
-├── routes.js         # API endpoint definitions
-└── services.js       # Business logic implementation
+```mermaid
+flowchart TD
+  U[src/modules/users] --> UC[controller.js API handlers and validation]
+  U --> UM[model.js User schema]
+  U --> UR[routes.js endpoint definitions]
+  U --> US[services.js business logic]
 ```
 
 ### Layer Responsibilities
 
 **Controller Layer** (`controller.js`)
+
 - Receives HTTP requests
 - Validates presence of required data
 - Delegates business logic to services
@@ -77,6 +78,7 @@ src/modules/users/
 - Handles error responses
 
 **Service Layer** (`services.js`)
+
 - Extends BaseRepository for database operations
 - Implements core business logic
 - Password hashing and OTP generation
@@ -86,6 +88,7 @@ src/modules/users/
 - Token generation
 
 **Model Layer** (`model.js`)
+
 - Defines User schema with validation
 - Field indexes for query optimization
 - Optional fields (lastName, profilePicture)
@@ -126,6 +129,7 @@ src/modules/users/
 **Purpose:** Register a new user or resend OTP to existing unverified user
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -137,6 +141,7 @@ src/modules/users/
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -148,6 +153,7 @@ src/modules/users/
 ```
 
 **Business Rules:**
+
 - Email must be unique (case-insensitive)
 - If email exists and user is verified → Error 409
 - If email exists and user is unverified → Regenerate OTP
@@ -156,6 +162,7 @@ src/modules/users/
 - Returned token expires in 20 minutes
 
 **Error Codes:**
+
 - 400: Missing required fields
 - 409: User already exists
 - 500: Email sending failed
@@ -167,6 +174,7 @@ src/modules/users/
 **Purpose:** Verify OTP and complete user registration
 
 **Request Body:**
+
 ```json
 {
   "otp": 1234
@@ -174,11 +182,13 @@ src/modules/users/
 ```
 
 **Request Headers:**
+
 ```
 Authorization: Bearer <signup-token>
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -196,10 +206,12 @@ Authorization: Bearer <signup-token>
 ```
 
 **Cookies Set:**
+
 - `refreshToken`: Refresh token (7 days expiry)
 - `CloudFront cookies`: For CDN access
 
 **Business Rules:**
+
 - OTP must be valid and not expired (5-minute window)
 - User is marked as verified
 - Access token is generated
@@ -207,6 +219,7 @@ Authorization: Bearer <signup-token>
 - Personal workspace is auto-created
 
 **Error Codes:**
+
 - 400: Invalid or expired OTP
 - 401: Invalid/expired signup token
 - 500: Token generation failed
@@ -218,11 +231,13 @@ Authorization: Bearer <signup-token>
 **Purpose:** Resend OTP to user's email
 
 **Route Parameters:**
+
 ```
 token: JWT token from signup response
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -231,22 +246,25 @@ token: JWT token from signup response
 ```
 
 **Business Rules:**
+
 - Token must be valid and not expired
 - New OTP is generated (5-minute expiry)
 - Email must be sent successfully before DB update
 - User is identified from JWT payload
 
 **Error Codes:**
+
 - 400: Invalid token
 - 500: Email sending failed, no database changes made
 
 ---
 
-### POST `/api/users/login` *(Inferred from structure)*
+### POST `/api/users/login` _(Inferred from structure)_
 
 **Purpose:** Login existing verified user
 
 **Typical Implementation:**
+
 - Email + password authentication
 - Password hash comparison
 - Access + Refresh token generation
@@ -259,10 +277,11 @@ token: JWT token from signup response
 ### Custom Error Class (ApiError)
 
 ```javascript
-new ApiError(message, statusCode, code)
+new ApiError(message, statusCode, code);
 ```
 
 **Common Auth Errors:**
+
 - `USER_EXISTS`: User already verified
 - `USERNAME_EXISTS`: Username taken
 - `OTP_VERIFICATION_FAILED`: Invalid/expired OTP
@@ -279,6 +298,7 @@ new ApiError(message, statusCode, code)
 ## Configuration
 
 **Environment Variables Required:**
+
 - `GOOGLE_CLIENT_ID`: Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET`: Google OAuth client secret
 - `JWT_SECRET`: Secret key for signing JWTs
@@ -298,6 +318,7 @@ new ApiError(message, statusCode, code)
 ## Middleware Integration
 
 **Route Protection:**
+
 ```javascript
 import { checkAccessToken } from "../middlewares/authMiddleware.js";
 
@@ -305,6 +326,7 @@ router.post("/protected-route", checkAccessToken, controller.method);
 ```
 
 **Middleware Behavior:**
+
 - Validates Authorization header format (Bearer token)
 - Decodes and verifies JWT signature
 - Inserts user object into `req.user`
@@ -359,6 +381,7 @@ router.post("/protected-route", checkAccessToken, controller.method);
 ### State Management
 
 **Redux/Context Store Recommendations:**
+
 - `authToken`: Access token (expires on token expiry)
 - `user`: User profile object
 - `isAuthLoading`: Signup/login request state
@@ -385,11 +408,10 @@ router.post("/protected-route", checkAccessToken, controller.method);
 
 ## Common Issues & Solutions
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| OTP not received | Email service down | Check email service logs |
-| OTP expired before use | User delayed verification | Implement resend mechanism |
-| Duplicate user error | Race condition on signup | Use database unique constraint + transaction |
-| Token validation fails | Token signature invalid | Verify JWT_SECRET matches across services |
-| CloudFront cookies missing | S3 signer misconfigured | Check AWS credentials and CloudFront config |
-
+| Issue                      | Cause                     | Solution                                     |
+| -------------------------- | ------------------------- | -------------------------------------------- |
+| OTP not received           | Email service down        | Check email service logs                     |
+| OTP expired before use     | User delayed verification | Implement resend mechanism                   |
+| Duplicate user error       | Race condition on signup  | Use database unique constraint + transaction |
+| Token validation fails     | Token signature invalid   | Verify JWT_SECRET matches across services    |
+| CloudFront cookies missing | S3 signer misconfigured   | Check AWS credentials and CloudFront config  |

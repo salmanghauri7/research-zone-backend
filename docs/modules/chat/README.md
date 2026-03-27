@@ -51,32 +51,30 @@ The Chat Module provides real-time messaging for workspaces. It handles sending/
 
 ### File Structure
 
-```
-src/modules/chat/
-├── controller.js      # API request handling
-├── model.js          # Message schema
-├── routes.js         # REST endpoints
-├── services.js       # Business logic
-├── socketHandler.js  # Socket.io event handling
-└── pipelines.js      # Aggregation queries
+```mermaid
+flowchart TD
+  C[src/modules/chat] --> CC[controller.js API handling]
+  C --> CM[model.js message schema]
+  C --> CR[routes.js REST endpoints]
+  C --> CS[services.js business logic]
+  C --> CH[socketHandler.js socket events]
+  C --> CP[pipelines.js aggregation queries]
 ```
 
 ### Real-time Architecture
 
-```
-Client A                    Server                  Client B
-   │                          │                        │
-   ├─ Socket.io connect ────►│                        │
-   │                          │                        │
-   ├─ message:send ─────────►│ Validate & Save        │
-   │                          ├─ Save to DB           │
-   │                          │                        │
-   │                          ├─ Broadcast message ───┤
-   │                          ├─ Notify other clients │
-   │       ◄─── message:new ──│                        │
-   │       (Real-time update) │                        │
-   │                          │      ◄─ Receive msg ──┤
-   │                          │                        │
+```mermaid
+sequenceDiagram
+  participant A as Client A
+  participant S as Server
+  participant B as Client B
+
+  A->>S: Socket.io connect
+  A->>S: message:send
+  S->>S: Validate and save
+  S->>S: Persist to database
+  S-->>A: message:new real-time update
+  S-->>B: Broadcast message
 ```
 
 ## Database Schema
@@ -90,7 +88,7 @@ Client A                    Server                  Client B
   sender: ObjectId (ref: User),       // Who sent
   content: String (required),         // Message text
   type: String (default: 'text'),     // 'text', 'image', 'file'
-  
+
   // Optional: For file/image messages
   attachment: {
     url: String,
@@ -98,7 +96,7 @@ Client A                    Server                  Client B
     name: String,
     size: Number
   },
-  
+
   // Reactions
   reactions: [
     {
@@ -106,19 +104,19 @@ Client A                    Server                  Client B
       users: [ObjectId (ref: User)]   // Who reacted
     }
   ],
-  
+
   // Mentions
   mentions: [ObjectId (ref: User)],   // @mentioned users
-  
+
   // Editing
   isEdited: Boolean (default: false),
   editedAt: Date,
   originalContent: String,            // For tracking edits (optional)
-  
+
   // Deletion
   isDeleted: Boolean (default: false), // Soft delete
   deletedAt: Date,
-  
+
   createdAt: Date (auto),
   updatedAt: Date (auto)
 }
@@ -126,16 +124,16 @@ Client A                    Server                  Client B
 
 ### Key Fields - Required vs Optional
 
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| workspaceId | ✅ | ObjectId | Messages scoped to workspace |
-| sender | ✅ | ObjectId | Who sent the message |
-| content | ✅ | String | Message text |
-| type | ❌ | String | Default: 'text' |
-| reactions | ❌ | Array | Empty by default |
-| isEdited | ❌ | Boolean | Default: false |
-| isDeleted | ❌ | Boolean | Default: false (soft delete) |
-| createdAt | ✅ | Date | Auto-set by Mongoose |
+| Field       | Required | Type     | Notes                        |
+| ----------- | -------- | -------- | ---------------------------- |
+| workspaceId | ✅       | ObjectId | Messages scoped to workspace |
+| sender      | ✅       | ObjectId | Who sent the message         |
+| content     | ✅       | String   | Message text                 |
+| type        | ❌       | String   | Default: 'text'              |
+| reactions   | ❌       | Array    | Empty by default             |
+| isEdited    | ❌       | Boolean  | Default: false               |
+| isDeleted   | ❌       | Boolean  | Default: false (soft delete) |
+| createdAt   | ✅       | Date     | Auto-set by Mongoose         |
 
 ### Indexes
 
@@ -160,6 +158,7 @@ schema.index({ deletedAt: 1 }, { expireAfterSeconds: 2592000 }); // 30 days
 **Purpose:** Get all messages in a workspace
 
 **Query Parameters:**
+
 ```
 limit: Number (default: 50, max: 100)
 page: Number (default: 1)
@@ -167,6 +166,7 @@ sortBy: 'createdAt' (default)
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -183,7 +183,12 @@ sortBy: 'createdAt' (default)
         "content": "Hello team!",
         "type": "text",
         "reactions": [
-          { "emoji": "👍", "users": [/* ... */] }
+          {
+            "emoji": "👍",
+            "users": [
+              /* ... */
+            ]
+          }
         ],
         "createdAt": "2024-03-28T10:00:00Z",
         "isEdited": false
@@ -206,6 +211,7 @@ sortBy: 'createdAt' (default)
 **Purpose:** Send a message to workspace
 
 **Request Body:**
+
 ```json
 {
   "content": "Great discussion!",
@@ -215,6 +221,7 @@ sortBy: 'createdAt' (default)
 ```
 
 **Response (Success - 201):**
+
 ```json
 {
   "success": true,
@@ -234,6 +241,7 @@ sortBy: 'createdAt' (default)
 ```
 
 **Business Rules:**
+
 - Must be workspace member
 - Content required, max 5000 characters
 - Mentions must be valid workspace members
@@ -246,6 +254,7 @@ sortBy: 'createdAt' (default)
 **Purpose:** Edit a message
 
 **Request Body:**
+
 ```json
 {
   "content": "Updated message text"
@@ -253,6 +262,7 @@ sortBy: 'createdAt' (default)
 ```
 
 **Business Rules:**
+
 - Only message author can edit
 - EditeAt timestamp updated
 - Original content preserved (optional)
@@ -265,6 +275,7 @@ sortBy: 'createdAt' (default)
 **Purpose:** Delete a message
 
 **Business Rules:**
+
 - Author or workspace owner can delete
 - Soft delete (isDeleted = true)
 - Content replaced with "Message deleted"
@@ -278,6 +289,7 @@ sortBy: 'createdAt' (default)
 **Purpose:** Add reaction to message
 
 **Request Body:**
+
 ```json
 {
   "emoji": "👍"
@@ -285,14 +297,13 @@ sortBy: 'createdAt' (default)
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
   "data": {
     "_id": "507f...",
-    "reactions": [
-      { "emoji": "👍", "users": ["userId1", "userId2"] }
-    ]
+    "reactions": [{ "emoji": "👍", "users": ["userId1", "userId2"] }]
   }
 }
 ```
@@ -304,12 +315,13 @@ sortBy: 'createdAt' (default)
 **Purpose:** Remove reaction from message
 
 **Response:**
+
 ```json
 {
   "success": true,
   "data": {
     "emoji": "👍",
-    "users": ["userId2"]  // After removal
+    "users": ["userId2"] // After removal
   }
 }
 ```
@@ -321,92 +333,102 @@ sortBy: 'createdAt' (default)
 ### Server → Client Events
 
 **message:new** - New message posted
+
 ```javascript
-socket.emit('message:new', {
-  _id: '507f...',
-  workspaceId: '507f...',
+socket.emit("message:new", {
+  _id: "507f...",
+  workspaceId: "507f...",
   sender: { _id, firstName, email },
-  content: 'Hello!',
-  createdAt: '2024-03-28T10:00:00Z'
+  content: "Hello!",
+  createdAt: "2024-03-28T10:00:00Z",
 });
 ```
 
 **message:edited** - Message edited
+
 ```javascript
-socket.emit('message:edited', {
-  _id: '507f...',
-  content: 'Edited content',
+socket.emit("message:edited", {
+  _id: "507f...",
+  content: "Edited content",
   isEdited: true,
-  editedAt: '2024-03-28T10:05:00Z'
+  editedAt: "2024-03-28T10:05:00Z",
 });
 ```
 
 **message:deleted** - Message deleted
+
 ```javascript
-socket.emit('message:deleted', {
-  _id: '507f...',
+socket.emit("message:deleted", {
+  _id: "507f...",
   isDeleted: true,
-  deletedAt: '2024-03-28T10:10:00Z'
+  deletedAt: "2024-03-28T10:10:00Z",
 });
 ```
 
 **user:typing** - User is typing
+
 ```javascript
-socket.emit('user:typing', {
-  userId: '507f...',
-  firstName: 'John',
-  workspaceId: '507f...'
+socket.emit("user:typing", {
+  userId: "507f...",
+  firstName: "John",
+  workspaceId: "507f...",
 });
 ```
 
 **user:stopped-typing** - User stopped typing
+
 ```javascript
-socket.emit('user:stopped-typing', {
-  userId: '507f...',
-  workspaceId: '507f...'
+socket.emit("user:stopped-typing", {
+  userId: "507f...",
+  workspaceId: "507f...",
 });
 ```
 
 **reaction:added** - Reaction added
+
 ```javascript
-socket.emit('reaction:added', {
-  messageId: '507f...',
-  emoji: '👍',
-  userId: '507f...',
-  totalCount: 3
+socket.emit("reaction:added", {
+  messageId: "507f...",
+  emoji: "👍",
+  userId: "507f...",
+  totalCount: 3,
 });
 ```
 
 ### Client → Server Events
 
 **message:send** - Send message
+
 ```javascript
-socket.emit('message:send', {
-  workspaceId: '507f...',
-  content: 'Hello team!',
-  type: 'text'
+socket.emit("message:send", {
+  workspaceId: "507f...",
+  content: "Hello team!",
+  type: "text",
 });
 ```
 
 **user:typing** - User typing indicator
+
 ```javascript
-socket.emit('user:typing', {
-  workspaceId: '507f...'
+socket.emit("user:typing", {
+  workspaceId: "507f...",
 });
 ```
 
 **user:stopped-typing** - End typing
+
 ```javascript
-socket.emit('user:stopped-typing', {
-  workspaceId: '507f...'
+socket.emit("user:stopped-typing", {
+  workspaceId: "507f...",
 });
 ```
 
 **reaction:toggle** - Add/remove reaction
+
 ```javascript
-socket.emit('reaction:toggle', {
-  messageId: '507f...',
-  emoji: '👍'
+socket.emit("reaction:toggle", {
+  messageId: "507f...",
+  emoji: "👍",
 });
 ```
 
@@ -461,12 +483,12 @@ async sendMessage({ workspaceId, content, mentions, user }) {
   // 1. Validate mentions are workspace members
   const workspace = await Workspace.findById(workspaceId);
   const validMembers = workspace.members.map(m => m.user.toString());
-  
+
   const invalidMentions = mentions.filter(m => !validMembers.includes(m));
   if (invalidMentions.length > 0) {
     throw new ApiError("Invalid mentions", 400);
   }
-  
+
   // 2. Create message with mentions
   const message = await this.create({
     workspaceId,
@@ -475,10 +497,10 @@ async sendMessage({ workspaceId, content, mentions, user }) {
     mentions,
     type: 'text'
   });
-  
+
   // 3. Notify mentioned users
   await this.notifyMentions(message, mentions);
-  
+
   return message;
 }
 ```
@@ -488,7 +510,7 @@ async sendMessage({ workspaceId, content, mentions, user }) {
 ```javascript
 async deleteMessage(messageId, user) {
   const message = await this.findById(messageId);
-  
+
   // Check permission
   if (message.sender.toString() !== user.id.toString()) {
     // Check if user is workspace owner
@@ -497,16 +519,16 @@ async deleteMessage(messageId, user) {
       throw new ApiError("Not authorized", 403);
     }
   }
-  
+
   // Soft delete
   return await this.updateOne(
     { _id: messageId },
-    { 
-      $set: { 
-        isDeleted: true, 
+    {
+      $set: {
+        isDeleted: true,
         deletedAt: new Date(),
         content: 'Message deleted'
-      } 
+      }
     }
   );
 }
@@ -516,19 +538,19 @@ async deleteMessage(messageId, user) {
 
 ```javascript
 // Client sends every 1 second while typing
-socket.emit('user:typing', { workspaceId });
+socket.emit("user:typing", { workspaceId });
 
 // Server broadcasts to workspace
-socket.on('user:typing', ({ workspaceId }) => {
-  socket.broadcast.emit('user:typing', {
+socket.on("user:typing", ({ workspaceId }) => {
+  socket.broadcast.emit("user:typing", {
     userId,
     firstName,
-    workspaceId
+    workspaceId,
   });
 });
 
 // Client stops typing after 2 seconds inactivity
-socket.emit('user:stopped-typing', { workspaceId });
+socket.emit("user:stopped-typing", { workspaceId });
 ```
 
 ## UI Specifications
@@ -536,6 +558,7 @@ socket.emit('user:stopped-typing', { workspaceId });
 ### Message Display
 
 **Components for each message:**
+
 - User avatar
 - User name
 - Timestamp (relative, e.g., "2 min ago")
@@ -547,6 +570,7 @@ socket.emit('user:stopped-typing', { workspaceId });
 ### New Message Input
 
 **Features:**
+
 - Text input area
 - Mention support (@mentions)
 - Emoji picker
@@ -569,13 +593,13 @@ socket.emit('user:stopped-typing', { workspaceId });
 
 ## Common Issues & Solutions
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Messages not real-time | Socket.io not connected | Check socket auth, connection logs |
-| Duplicate messages | Message saved twice | Use idempotency key |
-| Old messages not loading | Missing pagination | Implement limit/offset in API |
-| Typing indicator stuck | User disconnect not captured | Clear indicators on disconnect |
-| Mentions not working | Invalid user IDs | Validate mentions before saving |
+| Issue                    | Cause                        | Solution                           |
+| ------------------------ | ---------------------------- | ---------------------------------- |
+| Messages not real-time   | Socket.io not connected      | Check socket auth, connection logs |
+| Duplicate messages       | Message saved twice          | Use idempotency key                |
+| Old messages not loading | Missing pagination           | Implement limit/offset in API      |
+| Typing indicator stuck   | User disconnect not captured | Clear indicators on disconnect     |
+| Mentions not working     | Invalid user IDs             | Validate mentions before saving    |
 
 ## Future Enhancements
 
@@ -595,4 +619,3 @@ socket.emit('user:stopped-typing', { workspaceId });
 
 **Module Version**: 1.0.0
 **Last Updated**: March 28, 2024
-

@@ -24,7 +24,7 @@ The Folders Module enables organization of saved papers within workspaces throug
 ```
 - Create folder: Any workspace member
 - Edit folder: Creator or workspace owner
-- Delete folder: Creator or workspace owner  
+- Delete folder: Creator or workspace owner
 - Move papers: Any workspace member
 - Delete papers in folder: Only workspace owner or paper owner
 ```
@@ -42,29 +42,33 @@ The Folders Module enables organization of saved papers within workspaces throug
 
 ### File Structure
 
-```
-src/modules/workspaces/folders/
-├── controller.js      # API request handling
-├── model.js          # Folder schema
-├── routes.js         # API endpoints
-└── services.js       # Business logic
+```mermaid
+flowchart TD
+  F[src/modules/workspaces/folders] --> FC[controller.js API handling]
+  F --> FM[model.js folder schema]
+  F --> FR[routes.js API endpoints]
+  F --> FS[services.js business logic]
 ```
 
 ### Folder Hierarchy Representation
 
-```
-Workspace
-├── Folder: "ML Papers"
-│   ├── Subfolder: "Computer Vision"
-│   │   ├── Paper: "ResNet"
-│   │   └── Paper: "Vision Transformer"
-│   ├── Subfolder: "NLP"
-│   │   ├── Paper: "BERT"
-│   │   └── Paper: "GPT-4"
-│   └── Paper: "Attention is All You Need"
-├── Folder: "To Review"
-│   └── Paper: "Some New Paper"
-└── Paper: "Unsorted Paper"
+```mermaid
+flowchart TD
+  W[Workspace] --> ML[Folder ML Papers]
+  W --> TR[Folder To Review]
+  W --> UP[Paper Unsorted Paper]
+
+  ML --> CV[Subfolder Computer Vision]
+  ML --> NLP[Subfolder NLP]
+  ML --> AIN[Paper Attention is All You Need]
+
+  CV --> R[Paper ResNet]
+  CV --> VT[Paper Vision Transformer]
+
+  NLP --> B[Paper BERT]
+  NLP --> G[Paper GPT-4]
+
+  TR --> SNP[Paper Some New Paper]
 ```
 
 ## Database Schema
@@ -90,14 +94,14 @@ Workspace
 
 ### Key Fields
 
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| workspaceId | ✅ | ObjectId | Folder belongs to workspace |
-| name | ✅ | String | Folder name (min 1, max 100) |
-| parentFolder | ❌ | ObjectId | Parent folder (null for root) |
-| createdBy | ✅ | ObjectId | Creator user |
-| color | ❌ | String | Hex color for UI |
-| description | ❌ | String | Optional description |
+| Field        | Required | Type     | Notes                         |
+| ------------ | -------- | -------- | ----------------------------- |
+| workspaceId  | ✅       | ObjectId | Folder belongs to workspace   |
+| name         | ✅       | String   | Folder name (min 1, max 100)  |
+| parentFolder | ❌       | ObjectId | Parent folder (null for root) |
+| createdBy    | ✅       | ObjectId | Creator user                  |
+| color        | ❌       | String   | Hex color for UI              |
+| description  | ❌       | String   | Optional description          |
 
 ### Indexes
 
@@ -122,16 +126,18 @@ schema.index({ createdBy: 1, workspaceId: 1 });
 **Purpose:** Create a new folder
 
 **Request Body:**
+
 ```json
 {
   "name": "Computer Vision",
-  "parentFolder": "507f...",  // Optional, for subfolders
+  "parentFolder": "507f...", // Optional, for subfolders
   "color": "#6366f1",
   "description": "Papers on vision tasks"
 }
 ```
 
 **Response (Success - 201):**
+
 ```json
 {
   "success": true,
@@ -152,6 +158,7 @@ schema.index({ createdBy: 1, workspaceId: 1 });
 ```
 
 **Business Rules:**
+
 - User must be workspace member
 - Folder name required, max 100 chars
 - Parent folder must exist in same workspace
@@ -159,6 +166,7 @@ schema.index({ createdBy: 1, workspaceId: 1 });
 - Max folder depth: 5 levels (optional)
 
 **Error Codes:**
+
 - 400: Missing name, circular reference
 - 403: Not workspace member
 - 404: Parent folder not found
@@ -170,6 +178,7 @@ schema.index({ createdBy: 1, workspaceId: 1 });
 **Purpose:** Get folder tree for workspace
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -207,6 +216,7 @@ schema.index({ createdBy: 1, workspaceId: 1 });
 ```
 
 **Business Rules:**
+
 - Only returns folders user has access to
 - Hierarchical structure with nested subfolders
 - Paper counts are cached values
@@ -219,12 +229,14 @@ schema.index({ createdBy: 1, workspaceId: 1 });
 **Purpose:** Get folder details and papers in it
 
 **Query Parameters:**
+
 ```
 limit: Number (default: 20)
 page: Number (default: 1)
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -262,16 +274,18 @@ page: Number (default: 1)
 **Purpose:** Update folder
 
 **Request Body:**
+
 ```json
 {
   "name": "New Folder Name",
   "color": "#8b5cf6",
   "description": "Updated description",
-  "parentFolder": "507f..."  // Move to different parent
+  "parentFolder": "507f..." // Move to different parent
 }
 ```
 
 **Business Rules:**
+
 - Only creator or workspace owner can update
 - Check circular references if moving
 - Update updatedAt timestamp
@@ -284,12 +298,14 @@ page: Number (default: 1)
 **Purpose:** Delete folder
 
 **Query Parameters:**
+
 ```
 action: 'delete' | 'relocate'
 relocateTo: ObjectId (if action is 'relocate')
 ```
 
 **Business Rules:**
+
 - Only creator or workspace owner can delete
 - If action is 'delete':
   - Delete folder and all subfolders
@@ -300,6 +316,7 @@ relocateTo: ObjectId (if action is 'relocate')
   - Delete empty folder
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -319,6 +336,7 @@ relocateTo: ObjectId (if action is 'relocate')
 **Purpose:** Add paper to folder
 
 **Request Body:**
+
 ```json
 {
   "paperId": "507f..."
@@ -326,6 +344,7 @@ relocateTo: ObjectId (if action is 'relocate')
 ```
 
 **Business Rules:**
+
 - Paper must be saved to workspace
 - Paper can be in multiple folders
 - Creates SavedPaper instance if not exists
@@ -343,22 +362,22 @@ async getFolderTree(workspaceId) {
     workspaceId,
     parentFolder: null
   });
-  
+
   // 2. For each folder, recursively fetch subfolders
   for (let folder of rootFolders) {
     folder.subfolders = await this.getSubfolders(folder._id);
   }
-  
+
   return rootFolders;
 }
 
 async getSubfolders(folderId) {
   const subfolders = await Folder.find({ parentFolder: folderId });
-  
+
   for (let subfolder of subfolders) {
     subfolder.subfolders = await this.getSubfolders(subfolder._id);
   }
-  
+
   return subfolders;
 }
 ```
@@ -368,20 +387,20 @@ async getSubfolders(folderId) {
 ```javascript
 async hasCircularReference(folderId, targetParentId) {
   let current = targetParentId;
-  
+
   while (current) {
     const folder = await Folder.findById(current);
-    
+
     if (!folder) break;
-    
+
     // If we reach the folder we're trying to move, it's circular
     if (folder._id.toString() === folderId.toString()) {
       return true;
     }
-    
+
     current = folder.parentFolder;
   }
-  
+
   return false;
 }
 ```
@@ -405,18 +424,18 @@ SavedPaper {
 ```javascript
 async movePaperToFolder(savedPaperId, newFolderId, user) {
   const savedPaper = await SavedPaper.findById(savedPaperId);
-  
+
   // Only owner or workspace owner
   if (savedPaper.savedBy !== user.id && !user.isAdmin) {
     throw new ApiError("Not authorized", 403);
   }
-  
+
   // Check folder exists in same workspace
   const folder = await Folder.findById(newFolderId);
   if (!folder || folder.workspaceId !== savedPaper.workspaceId) {
     throw new ApiError("Folder not found", 404);
   }
-  
+
   // Move paper
   return await SavedPaper.updateOne(
     { _id: savedPaperId },
@@ -435,12 +454,12 @@ async updateFolderCounts(folderId) {
   const paperCount = await SavedPaper.countDocuments({
     folderId
   });
-  
+
   // Count subfolders
   const subfolderCount = await Folder.countDocuments({
     parentFolder: folderId
   });
-  
+
   await Folder.updateOne(
     { _id: folderId },
     { $set: { paperCount, subfolderCount } }
@@ -449,6 +468,7 @@ async updateFolderCounts(folderId) {
 ```
 
 Call this after:
+
 - Adding paper to folder
 - Removing paper from folder
 - Creating/deleting subfolder
@@ -458,7 +478,7 @@ Call this after:
 ```javascript
 async getFolderPapers(folderId, page = 1, limit = 20) {
   const skip = (page - 1) * limit;
-  
+
   return await SavedPaper.find({ folderId })
     .skip(skip)
     .limit(limit)
@@ -471,6 +491,7 @@ async getFolderPapers(folderId, page = 1, limit = 20) {
 ### Folder Tree View
 
 **Components:**
+
 - Expandable/collapsible folder items
 - Folder icon with name
 - Paper count badge
@@ -481,6 +502,7 @@ async getFolderPapers(folderId, page = 1, limit = 20) {
 ### Folder Operations Menu
 
 **Actions:**
+
 - New subfolder
 - Rename
 - Change color
@@ -491,6 +513,7 @@ async getFolderPapers(folderId, page = 1, limit = 20) {
 ### Paper Management in Folder
 
 **Features:**
+
 - List papers in folder
 - Add paper button
 - Remove from folder button
@@ -500,13 +523,13 @@ async getFolderPapers(folderId, page = 1, limit = 20) {
 
 ## Common Issues & Solutions
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Circular reference error | Moving folder to its subfolder | Validate parent chain before move |
-| Paper counts wrong | Cache not updated | Recalculate counts on add/remove |
-| Slow tree loading | Deep nesting | Paginate folders, limit depth |
-| Papers lost on folder delete | No migration logic | Handle papers gracefully |
-| Old papers in folder | No archive | Implement archive with TTL |
+| Issue                        | Cause                          | Solution                          |
+| ---------------------------- | ------------------------------ | --------------------------------- |
+| Circular reference error     | Moving folder to its subfolder | Validate parent chain before move |
+| Paper counts wrong           | Cache not updated              | Recalculate counts on add/remove  |
+| Slow tree loading            | Deep nesting                   | Paginate folders, limit depth     |
+| Papers lost on folder delete | No migration logic             | Handle papers gracefully          |
+| Old papers in folder         | No archive                     | Implement archive with TTL        |
 
 ## Best Practices
 
@@ -541,4 +564,3 @@ async getFolderPapers(folderId, page = 1, limit = 20) {
 
 **Module Version**: 1.0.0
 **Last Updated**: March 28, 2024
-

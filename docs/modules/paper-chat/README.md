@@ -29,10 +29,15 @@ The Paper-Chat Module manages discussions specific to individual research papers
 
 ### Access Control
 
-```
-- View paper-chat: Workspace members only
-- Send message: Workspace members only
-- Edit/delete: Message author or workspace owner
+```mermaid
+flowchart TD
+  A[Paper-chat action request] --> B{User is workspace member}
+  B -->|No| C[Deny access]
+  B -->|Yes| D{Action type}
+  D -->|View or Send| E[Allow]
+  D -->|Edit or Delete| F{Author or Workspace Owner}
+  F -->|Yes| E
+  F -->|No| C
 ```
 
 ### AI Summaries
@@ -45,13 +50,13 @@ The Paper-Chat Module manages discussions specific to individual research papers
 
 ### File Structure
 
-```
-src/modules/paper-chat/
-├── controller.js          # API request handling
-├── model.js              # Conversation schema
-├── conversationModel.js   # Conversation-specific schema
-├── route.js              # API endpoints
-└── services.js           # Business logic
+```mermaid
+flowchart TD
+  PC[src/modules/paper-chat] --> PCC[controller.js API handling]
+  PC --> PCM[model.js conversation schema]
+  PC --> PCCM[conversationModel.js conversation model]
+  PC --> PCR[route.js API endpoints]
+  PC --> PCS[services.js business logic]
 ```
 
 ### Data Design
@@ -80,7 +85,7 @@ Conversation {
   _id: ObjectId,
   paperId: ObjectId (ref: Paper, indexed),
   workspaceId: ObjectId (ref: Workspace, indexed),
-  
+
   // Nested messages
   messages: [
     {
@@ -88,7 +93,7 @@ Conversation {
       sender: ObjectId (ref: User),
       content: String,
       type: String (default: 'text'),
-      
+
       // Reactions
       reactions: [
         {
@@ -96,24 +101,24 @@ Conversation {
           users: [ObjectId]
         }
       ],
-      
+
       // Editing
       isEdited: Boolean,
       editedAt: Date,
-      
+
       // Deletion
       isDeleted: Boolean,
       deletedAt: Date,
-      
+
       createdAt: Date
     }
   ],
-  
+
   // Metadata
   messageCount: Number,           // Total messages in conversation
   participantCount: Number,       // Unique participants
   lastMessageAt: Date,            // For sorting
-  
+
   // AI-generated summaries (optional)
   summaries: [
     {
@@ -123,7 +128,7 @@ Conversation {
       aiModel: String
     }
   ],
-  
+
   createdAt: Date (auto),
   updatedAt: Date (auto)
 }
@@ -149,12 +154,14 @@ schema.index({ paperId: 1, messageCount: -1 });
 **Purpose:** Get conversation for a paper
 
 **Query Parameters:**
+
 ```
 workspaceId: ObjectId (required)
 limit: Number (default: 50, for pagination through messages)
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -174,9 +181,7 @@ limit: Number (default: 50, for pagination through messages)
         },
         "content": "This paper is interesting because...",
         "type": "text",
-        "reactions": [
-          { "emoji": "👍", "users": ["userId1"] }
-        ],
+        "reactions": [{ "emoji": "👍", "users": ["userId1"] }],
         "isEdited": false,
         "createdAt": "2024-03-28T10:00:00Z"
       }
@@ -193,6 +198,7 @@ limit: Number (default: 50, for pagination through messages)
 ```
 
 **Business Rules:**
+
 - User must be workspace member
 - Conversation created automatically on first message
 - If no messages, return empty conversation
@@ -205,6 +211,7 @@ limit: Number (default: 50, for pagination through messages)
 **Purpose:** Send message in paper discussion
 
 **Request Body:**
+
 ```json
 {
   "workspaceId": "507f...",
@@ -214,11 +221,12 @@ limit: Number (default: 50, for pagination through messages)
 ```
 
 **Response (Success - 201):**
+
 ```json
 {
   "success": true,
   "data": {
-    "_id": "507f...",  // Message ID
+    "_id": "507f...", // Message ID
     "conversationId": "507f...",
     "sender": {
       "_id": "507f...",
@@ -232,6 +240,7 @@ limit: Number (default: 50, for pagination through messages)
 ```
 
 **Business Rules:**
+
 - User must be workspace member
 - Paper must exist and be accessible to user
 - Conversation auto-created if not exists
@@ -246,6 +255,7 @@ limit: Number (default: 50, for pagination through messages)
 **Purpose:** Edit a message in discussion
 
 **Request Body:**
+
 ```json
 {
   "content": "I think this methodology is flawed because of X reason"
@@ -253,6 +263,7 @@ limit: Number (default: 50, for pagination through messages)
 ```
 
 **Business Rules:**
+
 - Only message author can edit
 - isEdited set to true
 - editedAt timestamp added
@@ -265,6 +276,7 @@ limit: Number (default: 50, for pagination through messages)
 **Purpose:** Delete message from discussion
 
 **Business Rules:**
+
 - Author or workspace owner can delete
 - isDeleted set to true
 - Message content replaced
@@ -278,11 +290,13 @@ limit: Number (default: 50, for pagination through messages)
 **Purpose:** Generate AI summary of discussion
 
 **Query Parameters:**
+
 ```
 workspaceId: ObjectId (required)
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -300,6 +314,7 @@ workspaceId: ObjectId (required)
 ```
 
 **Business Rules:**
+
 - Only workspace members can request
 - Summary appended to summaries array
 - Async operation (returns immediately)
@@ -312,6 +327,7 @@ workspaceId: ObjectId (required)
 **Purpose:** React to a message
 
 **Request Body:**
+
 ```json
 {
   "workspaceId": "507f...",
@@ -326,24 +342,23 @@ workspaceId: ObjectId (required)
 
 ### Relationship
 
-```
-Paper (1) ← → (1) Conversation
-         ↓
-     messages[]
-         ↓
-    Message { sender, content, reactions }
+```mermaid
+flowchart TD
+  P[Paper one] <--> C[Conversation one]
+  C --> M[messages array]
+  M --> MSG[Message sender content reactions]
 ```
 
 ### Workflow
 
-```
-1. User saves paper to workspace
-2. Clicks "Start discussion"
-3. Conversation created automatically
-4. User types and sends message
-5. Message added to conversation.messages[]
-6. Real-time broadcast to workspace
-7. Other members see discussion in paper view
+```mermaid
+flowchart TD
+  A[User saves paper to workspace] --> B[User clicks Start discussion]
+  B --> C[Conversation created automatically]
+  C --> D[User sends message]
+  D --> E[Message added to conversation messages]
+  E --> F[Real-time broadcast to workspace]
+  F --> G[Other members see discussion in paper view]
 ```
 
 ### Checking Paper Accessibility
@@ -354,20 +369,20 @@ async sendMessage({ paperId, workspaceId, content, user }) {
   const workspace = await Workspace.findById(workspaceId);
   const isMember = workspace.members.some(m => m.user === user.id);
   if (!isMember) throw new ApiError("Not member", 403);
-  
+
   // 2. Check if paper is accessible in workspace
   const savedPaper = await SavedPaper.findOne({
     paperId,
     workspaceId
   });
   if (!savedPaper) throw new ApiError("Paper not in workspace", 404);
-  
+
   // 3. Get or create conversation
   let conversation = await Conversation.findOne({
     paperId,
     workspaceId
   });
-  
+
   if (!conversation) {
     conversation = await Conversation.create({
       paperId,
@@ -375,7 +390,7 @@ async sendMessage({ paperId, workspaceId, content, user }) {
       messages: []
     });
   }
-  
+
   // 4. Add message
   const message = {
     _id: new ObjectId(),
@@ -383,13 +398,13 @@ async sendMessage({ paperId, workspaceId, content, user }) {
     content,
     createdAt: new Date()
   };
-  
+
   conversation.messages.push(message);
   conversation.messageCount = conversation.messages.length;
   conversation.lastMessageAt = new Date();
-  
+
   await conversation.save();
-  
+
   return message;
 }
 ```
@@ -400,27 +415,29 @@ async sendMessage({ paperId, workspaceId, content, user }) {
 
 ```javascript
 // Client sends
-socket.emit('paper:message', {
+socket.emit("paper:message", {
   paperId,
   workspaceId,
-  content
+  content,
 });
 
 // Server broadcasts to workspace
-socket.broadcast.to(workspaceId).emit('paper:message:new', {
+socket.broadcast.to(workspaceId).emit("paper:message:new", {
   paperId,
-  message: { _id, sender, content, createdAt }
+  message: { _id, sender, content, createdAt },
 });
 ```
 
 ## Message Nesting Strategy
 
 ### Pros of Nested Approach
+
 - ✅ All messages in one place
 - ✅ Atomic updates
 - ✅ Simpler queries
 
 ### Cons
+
 - ❌ Document size grows with messages
 - ❌ Hard to paginate old messages
 - ❌ MongoDB BSON size limit (16MB)
@@ -431,7 +448,7 @@ If conversation exceeds 1000 messages:
 
 ```javascript
 // Switch to separate collection
-db.paperchatmessages.find({ conversationId })
+db.paperchatmessages.find({ conversationId });
 ```
 
 ## UI Specifications
@@ -439,6 +456,7 @@ db.paperchatmessages.find({ conversationId })
 ### Paper Detail View - Chat Section
 
 **Layout:**
+
 - Messages list (scrollable)
 - User avatar + name next to each message
 - Timestamp
@@ -448,6 +466,7 @@ db.paperchatmessages.find({ conversationId })
 ### Message Input
 
 **Features:**
+
 - Text input
 - Send button
 - Character counter
@@ -468,13 +487,13 @@ db.paperchatmessages.find({ conversationId })
 
 ## Common Issues & Solutions
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Conversation not created | First message fails | Ensure validation before create |
-| Document too large | Too many messages | Implement message archiving |
-| Messages not loading | Bad paperId | Validate paper exists |
-| Summary generation slow | API timeout | Implement async with notifications |
-| Old messages not accessed | Missing pagination | Load more button for older messages |
+| Issue                     | Cause               | Solution                            |
+| ------------------------- | ------------------- | ----------------------------------- |
+| Conversation not created  | First message fails | Ensure validation before create     |
+| Document too large        | Too many messages   | Implement message archiving         |
+| Messages not loading      | Bad paperId         | Validate paper exists               |
+| Summary generation slow   | API timeout         | Implement async with notifications  |
+| Old messages not accessed | Missing pagination  | Load more button for older messages |
 
 ## Best Practices
 
@@ -510,4 +529,3 @@ db.paperchatmessages.find({ conversationId })
 
 **Module Version**: 1.0.0
 **Last Updated**: March 28, 2024
-

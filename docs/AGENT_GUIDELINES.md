@@ -31,35 +31,34 @@ This document provides essential guidelines for coding agents and developers wor
 
 Every module must follow this 3-layer architecture:
 
-```
-Route Layer (routes.js)
-    ↓
-Controller Layer (controller.js) 
-    ↓
-Service Layer (services.js)
-    ↓
-Database Layer (model.js + BaseRepository)
+```mermaid
+flowchart TD
+  A[Route Layer routes.js] --> B[Controller Layer controller.js]
+  B --> C[Service Layer services.js]
+  C --> D[Database Layer model.js and BaseRepository]
 ```
 
 **Layer Responsibilities:**
 
-| Layer | Responsibility | DO | DON'T |
-|-------|-----------------|----|----|
-| **Routes** | Map HTTP endpoints | Define routes, apply middleware | Contain business logic |
-| **Controller** | Handle requests | Validate input, call service, format response | Touch database directly |
-| **Service** | Business logic | Implement logic, permission checks, DB operations | Handle HTTP responses |
-| **Model** | Data definition | Define schema, indexes | Contain business logic |
+| Layer          | Responsibility     | DO                                                | DON'T                   |
+| -------------- | ------------------ | ------------------------------------------------- | ----------------------- |
+| **Routes**     | Map HTTP endpoints | Define routes, apply middleware                   | Contain business logic  |
+| **Controller** | Handle requests    | Validate input, call service, format response     | Touch database directly |
+| **Service**    | Business logic     | Implement logic, permission checks, DB operations | Handle HTTP responses   |
+| **Model**      | Data definition    | Define schema, indexes                            | Contain business logic  |
 
 ### Example: Adding a New Endpoint
 
 **1. routes.js**
+
 ```javascript
-router.post('/', checkAccessToken, controller.create);
+router.post("/", checkAccessToken, controller.create);
 // ONLY route definition + middleware
 // NO business logic here
 ```
 
 **2. controller.js**
+
 ```javascript
 static async create(req, res) {
   try {
@@ -73,22 +72,24 @@ static async create(req, res) {
 ```
 
 **3. services.js**
+
 ```javascript
 async create(title, user) {
   // ALL business logic here
   if (!title) throw new ApiError("Title required", 400);
   if (!user.isVerified) throw new ApiError("Not verified", 403);
-  
+
   const doc = await this.create({ title, createdBy: user.id });
   return doc;
 }
 ```
 
 **4. model.js**
+
 ```javascript
 const schema = new mongoose.Schema({
   title: { type: String, required: true },
-  createdBy: { type: ObjectId, ref: "User", index: true }
+  createdBy: { type: ObjectId, ref: "User", index: true },
 });
 ```
 
@@ -100,12 +101,12 @@ const schema = new mongoose.Schema({
 // GOOD ✅
 async deleteWorkspace(workspaceId, user) {
   const workspace = await this.findById(workspaceId);
-  
+
   // Check owner permission
   if (workspace.owner.toString() !== user.id.toString()) {
     throw new ApiError("Only owner can delete", 403);
   }
-  
+
   return await this.deleteOne({ _id: workspaceId });
 }
 
@@ -143,8 +144,8 @@ import { ApiError } from "../../utils/apiError.js";
 // Always use ApiError for consistency
 throw new ApiError(
   "Error message here",
-  statusCode,  // 400, 401, 403, 404, 409, 500
-  "ERROR_CODE"  // Optional, for frontend handling
+  statusCode, // 400, 401, 403, 404, 409, 500
+  "ERROR_CODE", // Optional, for frontend handling
 );
 ```
 
@@ -163,12 +164,14 @@ throw new ApiError(
 ### Response Format
 
 **Success:**
+
 ```javascript
 apiResponse.success(res, "Operation successful", 200, data);
 // Returns: { success: true, message, data }
 ```
 
 **Error:**
+
 ```javascript
 apiResponse.error(res, "Something went wrong", 500);
 // Returns: { success: false, message, statusCode }
@@ -181,20 +184,20 @@ apiResponse.error(res, "Something went wrong", 500);
 ```javascript
 // Available in any service extending BaseRepository:
 
-await this.findOne({ email })          // Find single document
-await this.findById(id)                 // Find by _id
-await this.create(data)                 // Create new document
-await this.updateOne(filter, updates)   // Update single document
-await this.deleteOne(filter)            // Delete document
-await this.aggregate(pipeline)          // Complex queries
+await this.findOne({ email }); // Find single document
+await this.findById(id); // Find by _id
+await this.create(data); // Create new document
+await this.updateOne(filter, updates); // Update single document
+await this.deleteOne(filter); // Delete document
+await this.aggregate(pipeline); // Complex queries
 ```
 
 ### Indexing Performance
 
 ```javascript
 // Create indexes for frequently queried fields
-schema.index({ email: 1 });                    // Single field
-schema.index({ workspaceId: 1, createdAt: -1 });  // Compound index
+schema.index({ email: 1 }); // Single field
+schema.index({ workspaceId: 1, createdAt: -1 }); // Compound index
 
 // GOOD: Fast lookups
 const user = await this.findOne({ email });
@@ -209,9 +212,16 @@ const user = await this.findOne({ bio: "something" });
 // Use aggregation instead of multiple queries
 const pipeline = [
   { $match: { owner: userId } },
-  { $lookup: { from: "users", localField: "owner", foreignField: "_id", as: "ownerDetails" } },
+  {
+    $lookup: {
+      from: "users",
+      localField: "owner",
+      foreignField: "_id",
+      as: "ownerDetails",
+    },
+  },
   { $group: { _id: "$owner", count: { $sum: 1 } } },
-  { $project: { count: 1, owner: "$_id" } }
+  { $project: { count: 1, owner: "$_id" } },
 ];
 
 const results = await this.aggregate(pipeline);
@@ -253,6 +263,7 @@ catch (err) {
 ### 1. DRY (Don't Repeat Yourself)
 
 ❌ **Bad** - Repeating permission check:
+
 ```javascript
 // In endpoint A
 if (user.id !== resource.owner) throw new Error("Not owner");
@@ -262,6 +273,7 @@ if (user.id !== resource.owner) throw new Error("Not owner");
 ```
 
 ✅ **Good** - Extract to service method:
+
 ```javascript
 // In service
 async checkOwnership(resourceId, user) {
@@ -282,13 +294,13 @@ await service.checkOwnership(resourceId, user);
 async createWorkspace({ title, user }) {
   // Check required fields first
   if (!title) throw new ApiError("Title required", 400);
-  
+
   // Check user status
   if (!user.isVerified) throw new ApiError("Not verified", 403);
-  
+
   // THEN do the expensive operation
   const workspace = await this.create({ title, owner: user.id });
-  
+
   return workspace;
 }
 ```
@@ -307,12 +319,12 @@ async create(req, res) {
   try {
     const { title } = req.body;
     if (!title) throw new ApiError("Title required", 400);
-    
+
     const workspace = await workspaceService.createWorkspace({
       title,
       user: req.user
     });
-    
+
     return apiResponse.success(
       res,
       "Workspace created successfully",
@@ -399,21 +411,21 @@ Content-Type: application/json
 ```javascript
 async signupUser(userData) {
   console.log("Signup attempt:", userData.email);
-  
+
   const user = await this.findOne({ email: userData.email });
   console.log("User found:", !!user);
-  
+
   if (user && user.isVerified) {
     console.log("User already verified");
     throw new ApiError("User exists", 409);
   }
-  
+
   const otp = generateOTP();
   console.log("Generated OTP:", otp);  // Remove in production!
-  
+
   const saved = await this.create(userData);
   console.log("User saved:", saved._id);
-  
+
   return saved;
 }
 ```
@@ -430,7 +442,7 @@ console.log("req.user:", req.user);
 ### 3. Database Query Debugging
 
 ```javascript
-mongoose.set('debug', true);  // Log all queries
+mongoose.set("debug", true); // Log all queries
 
 // Now in console you'll see every MongoDB operation
 ```
@@ -458,21 +470,23 @@ Before submitting code for review:
 ### Adding a Simple GET Endpoint
 
 **1. Define route in routes.js:**
+
 ```javascript
-router.get('/:id', checkAccessToken, controller.getById);
+router.get("/:id", checkAccessToken, controller.getById);
 ```
 
 **2. Add controller method:**
+
 ```javascript
 static async getById(req, res) {
   try {
     const { id } = req.params;
     const item = await itemDb.findById(id);
-    
+
     if (!item) {
       throw new ApiError("Not found", 404);
     }
-    
+
     return apiResponse.success(res, "Retrieved", 200, item);
   } catch (err) {
     return apiResponse.error(res, err.message, err.statusCode || 500);
@@ -481,6 +495,7 @@ static async getById(req, res) {
 ```
 
 **3. Add service method:**
+
 ```javascript
 async getById(id) {
   return await this.findById(id);
@@ -490,19 +505,21 @@ async getById(id) {
 ### Adding a DELETE Endpoint with Permission Check
 
 **1. Route:**
+
 ```javascript
-router.delete('/:id', checkAccessToken, controller.delete);
+router.delete("/:id", checkAccessToken, controller.delete);
 ```
 
 **2. Controller:**
+
 ```javascript
 static async delete(req, res) {
   try {
     const { id } = req.params;
     const user = req.user;
-    
+
     await itemDb.deleteItem(id, user);
-    
+
     return apiResponse.success(res, "Deleted", 200);
   } catch (err) {
     return apiResponse.error(res, err.message, err.statusCode || 500);
@@ -511,19 +528,20 @@ static async delete(req, res) {
 ```
 
 **3. Service:**
+
 ```javascript
 async deleteItem(id, user) {
   const item = await this.findById(id);
-  
+
   if (!item) {
     throw new ApiError("Not found", 404);
   }
-  
+
   // Permission check
   if (item.owner.toString() !== user.id.toString()) {
     throw new ApiError("Not owner", 403);
   }
-  
+
   return await this.deleteOne({ _id: id });
 }
 ```
@@ -531,21 +549,22 @@ async deleteItem(id, user) {
 ### Adding an Endpoint with Validation
 
 **1. Controller (validate first):**
+
 ```javascript
 static async create(req, res) {
   try {
     const { email, title } = req.body;
-    
+
     // Validate required fields
     if (!email || !title) {
       throw new ApiError("Email and title required", 400);
     }
-    
+
     // Validate email format
     if (!email.includes('@')) {
       throw new ApiError("Invalid email", 400);
     }
-    
+
     const result = await service.create({ email, title }, req.user);
     return apiResponse.success(res, "Created", 200, result);
   } catch (err) {
@@ -555,19 +574,20 @@ static async create(req, res) {
 ```
 
 **2. Service (business logic):**
+
 ```javascript
 async create({ email, title }, user) {
   // Check if user is verified
   if (!user.isVerified) {
     throw new ApiError("Account not verified", 403);
   }
-  
+
   // Check if email already exists
   const exists = await this.findOne({ email });
   if (exists) {
     throw new ApiError("Email already exists", 409);
   }
-  
+
   // Create the document
   return await this.create({
     email,
@@ -588,7 +608,7 @@ async create({ email, title }, user) {
 async signupUser(userData) {
   // 1. Create user
   const user = await this.create(userData);
-  
+
   // 2. THEN send email
   try {
     await sendEmail(user.email, "Welcome!", template);
@@ -597,7 +617,7 @@ async signupUser(userData) {
     await this.deleteOne({ _id: user._id });
     throw error;
   }
-  
+
   return user;
 }
 ```
@@ -608,12 +628,12 @@ async signupUser(userData) {
 async updateItem(itemId, updates, user) {
   // 1. Get the resource
   const item = await this.findById(itemId);
-  
+
   // 2. Check permission BEFORE modifying
   if (item.owner.toString() !== user.id.toString()) {
     throw new ApiError("Not authorized", 403);
   }
-  
+
   // 3. THEN update
   return await this.updateOne({ _id: itemId }, { $set: updates });
 }
@@ -625,12 +645,12 @@ async updateItem(itemId, updates, user) {
 async complexOperation(data, user) {
   const session = await mongoose.startSession();
   session.startTransaction();
-  
+
   try {
     // Multiple operations
     const ws = await Workspace.create([{ ...data }], { session });
     const member = await Member.create([{ workspace: ws._id, user: user._id }], { session });
-    
+
     await session.commitTransaction();
     return ws;
   } catch (error) {
@@ -648,22 +668,22 @@ async complexOperation(data, user) {
 
 ```javascript
 // WRONG - Anyone can access
-router.delete('/:id', controller.delete);
+router.delete("/:id", controller.delete);
 
 // CORRECT - Requires authentication
-router.delete('/:id', checkAccessToken, controller.delete);
+router.delete("/:id", checkAccessToken, controller.delete);
 ```
 
 ### ❌ Anti-Pattern 2: No Permission Checks
 
 ```javascript
 // WRONG - Any user can delete any document
-router.delete('/items/:id', checkAccessToken, async (req, res) => {
+router.delete("/items/:id", checkAccessToken, async (req, res) => {
   await Item.deleteOne({ _id: req.params.id });
 });
 
 // CORRECT - Check owner
-router.delete('/items/:id', checkAccessToken, controller.delete);
+router.delete("/items/:id", checkAccessToken, controller.delete);
 // then in service: check if user is owner before deleting
 ```
 
@@ -671,13 +691,13 @@ router.delete('/items/:id', checkAccessToken, controller.delete);
 
 ```javascript
 // WRONG - Database query in controller
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
   if (user) res.status(409).json({ error: "User exists" });
 });
 
 // CORRECT - Call service
-router.post('/', controller.signup);
+router.post("/", controller.signup);
 // Service handles the query
 ```
 
@@ -688,7 +708,7 @@ router.post('/', controller.signup);
 try {
   await sendEmail(email, subject, html);
 } catch (err) {
-  console.log("Error");  // Just logs, doesn't throw
+  console.log("Error"); // Just logs, doesn't throw
 }
 
 // CORRECT - Throw error to be handled by caller
@@ -708,7 +728,7 @@ return { password: user.password };
 
 // CORRECT
 console.log("JWT verified successfully");
-return { id: user._id, email: user.email };  // Never password
+return { id: user._id, email: user.email }; // Never password
 ```
 
 ## 🎓 Learning Resources
@@ -724,7 +744,7 @@ When working on a specific module:
 
 ## 📞 Need Help?
 
-1. **Understanding module**: Read its docs/modules/*/README.md
+1. **Understanding module**: Read its docs/modules/\*/README.md
 2. **How to implement X**: Check [DEVELOPMENT.md](../DEVELOPMENT.md#adding-a-new-endpoint)
 3. **Debugging issue**: See [DEVELOPMENT.md](../DEVELOPMENT.md#common-issues--solutions)
 4. **API patterns**: Check [API_REFERENCE.md](../API_REFERENCE.md)
@@ -736,4 +756,3 @@ When working on a specific module:
 
 **Last Updated**: March 28, 2024
 **Version**: 1.0.0
-

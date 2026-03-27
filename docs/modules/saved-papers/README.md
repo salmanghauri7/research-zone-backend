@@ -15,6 +15,7 @@ The Saved Papers Module manages papers that users save to workspaces. It creates
 ### Saving Papers
 
 Users can save papers from:
+
 1. Search results
 2. Uploaded papers
 3. Shared papers
@@ -29,36 +30,38 @@ Users can save papers from:
 
 ### Access Control
 
-```
-- Save paper: Workspace member
-- View saved papers: Workspace members
-- Edit notes: Paper saver or workspace owner
-- Remove paper: Paper saver or workspace owner
-- Share SavedPaper: Workspace members (share paper, not SavedPaper record)
+```mermaid
+flowchart TD
+  A[Saved-paper action request] --> B{Workspace member}
+  B -->|No| C[Deny]
+  B -->|Yes| D{Action}
+  D -->|Save or View or Share paper| E[Allow]
+  D -->|Edit notes or Remove| F{Saver or Workspace Owner}
+  F -->|Yes| E
+  F -->|No| C
 ```
 
 ## Architecture
 
 ### File Structure
 
-```
-src/modules/workspaces/saved-papers/
-├── controller.js      # API request handling
-├── model.js          # SavedPaper schema
-├── routes.js         # API endpoints
-└── services.js       # Business logic
+```mermaid
+flowchart TD
+  SP[src/modules/workspaces/saved-papers] --> SPC[controller.js API handling]
+  SP --> SPM[model.js SavedPaper schema]
+  SP --> SPR[routes.js API endpoints]
+  SP --> SPS[services.js business logic]
 ```
 
 ### Data Relationships
 
-```
-User
-  ↓
-SavedPaper ← → Paper
-  ↓           ↓
-Workspace   Metadata
-  ↓
-Folder (optional)
+```mermaid
+flowchart TD
+  U[User] --> S[SavedPaper]
+  S <--> P[Paper]
+  S --> W[Workspace]
+  S --> F[Folder optional]
+  P --> M[Metadata]
 ```
 
 ## Database Schema
@@ -68,13 +71,13 @@ Folder (optional)
 ```javascript
 {
   _id: ObjectId,
-  
+
   // References
   paperId: ObjectId (ref: Paper, indexed),
   workspaceId: ObjectId (ref: Workspace, indexed),
   folderId: ObjectId (ref: Folder, nullable),
   savedBy: ObjectId (ref: User, indexed),
-  
+
   // Annotations
   notes: String,                    // User's personal notes
   tags: [String],                   // Custom tags
@@ -84,12 +87,12 @@ Folder (optional)
     'reading',
     'completed'
   ]),
-  
+
   // Metadata
   savedAt: Date (default: now),
   updatedAt: Date (auto),
   lastAccessedAt: Date,            // When last viewed
-  
+
   // Optional: Highlights/annotations
   highlights: [
     {
@@ -99,7 +102,7 @@ Folder (optional)
       createdAt: Date
     }
   ],
-  
+
   // Quick reference
   paperTitle: String,               // Denormalized for quick display
   paperAuthors: [String],          // Denormalized
@@ -123,8 +126,8 @@ schema.index({ paperId: 1, workspaceId: 1 });
 schema.index({ folderId: 1, workspaceId: 1 });
 
 // Search saved papers
-schema.index({ "tags": 1, workspaceId: 1 });
-schema.index({ "paperTitle": "text", "notes": "text" });
+schema.index({ tags: 1, workspaceId: 1 });
+schema.index({ paperTitle: "text", notes: "text" });
 ```
 
 ## API Endpoints
@@ -134,10 +137,11 @@ schema.index({ "paperTitle": "text", "notes": "text" });
 **Purpose:** Save a paper to workspace
 
 **Request Body:**
+
 ```json
 {
   "paperId": "507f...",
-  "folderId": "507f...",  // Optional
+  "folderId": "507f...", // Optional
   "notes": "Great paper on attention mechanisms",
   "tags": ["nlp", "attention", "transformers"],
   "importance": 4
@@ -145,6 +149,7 @@ schema.index({ "paperTitle": "text", "notes": "text" });
 ```
 
 **Response (Success - 201):**
+
 ```json
 {
   "success": true,
@@ -167,6 +172,7 @@ schema.index({ "paperTitle": "text", "notes": "text" });
 ```
 
 **Business Rules:**
+
 - User must be workspace member
 - Paper must exist
 - Cannot save same paper twice (check before save)
@@ -174,6 +180,7 @@ schema.index({ "paperTitle": "text", "notes": "text" });
 - Folder must be in same workspace (if provided)
 
 **Error Codes:**
+
 - 400: Invalid paperId or folderId
 - 403: Not workspace member
 - 404: Paper or folder not found
@@ -186,6 +193,7 @@ schema.index({ "paperTitle": "text", "notes": "text" });
 **Purpose:** Get all saved papers in workspace
 
 **Query Parameters:**
+
 ```
 limit: Number (default: 20)
 page: Number (default: 1)
@@ -199,6 +207,7 @@ sortOrder: 'asc' | 'desc' (default: 'desc')
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -244,6 +253,7 @@ sortOrder: 'asc' | 'desc' (default: 'desc')
 **Purpose:** Get detailed saved paper with annotations
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -255,12 +265,12 @@ sortOrder: 'asc' | 'desc' (default: 'desc')
     "paperAuthors": ["Vaswani et al"],
     "paperAbstract": "...",
     "pdfUrl": "https://cdn.research.com/...",
-    
+
     "notes": "Foundational work in transformers",
     "tags": ["nlp", "attention", "transformers"],
     "importance": 5,
     "readStatus": "completed",
-    
+
     "highlights": [
       {
         "page": 3,
@@ -269,7 +279,7 @@ sortOrder: 'asc' | 'desc' (default: 'desc')
         "createdAt": "2024-03-28T10:15:00Z"
       }
     ],
-    
+
     "savedAt": "2024-03-28T10:00:00Z",
     "lastAccessedAt": "2024-03-28T15:00:00Z"
   }
@@ -283,17 +293,19 @@ sortOrder: 'asc' | 'desc' (default: 'desc')
 **Purpose:** Update saved paper annotations
 
 **Request Body:**
+
 ```json
 {
   "notes": "Updated notes after re-reading",
   "tags": ["nlp", "attention", "architecture"],
   "importance": 5,
   "readStatus": "completed",
-  "folderId": "507f..."  // Move to different folder
+  "folderId": "507f..." // Move to different folder
 }
 ```
 
 **Business Rules:**
+
 - Only saver or workspace owner can update
 - Folder must be in same workspace
 - lastAccessedAt updated automatically
@@ -305,6 +317,7 @@ sortOrder: 'asc' | 'desc' (default: 'desc')
 **Purpose:** Remove paper from saved papers
 
 **Business Rules:**
+
 - Only saver or workspace owner can delete
 - Paper still exists in system
 - Only removes from SavedPaper collection
@@ -317,15 +330,17 @@ sortOrder: 'asc' | 'desc' (default: 'desc')
 **Purpose:** Add highlight/annotation to paper
 
 **Request Body:**
+
 ```json
 {
   "page": 5,
   "text": "The mechanism is crucial for modern NLP",
-  "color": "yellow"  // yellow, green, blue, pink
+  "color": "yellow" // yellow, green, blue, pink
 }
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -346,6 +361,7 @@ sortOrder: 'asc' | 'desc' (default: 'desc')
 **Purpose:** Get all highlights on saved paper
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -374,37 +390,37 @@ sortOrder: 'asc' | 'desc' (default: 'desc')
 ```javascript
 async searchSavedPapers(workspaceId, filters) {
   let query = { workspaceId };
-  
+
   // Filter by folder
   if (filters.folderId) {
     query.folderId = filters.folderId;
   }
-  
+
   // Filter by tags (OR condition)
   if (filters.tags && filters.tags.length > 0) {
     query.tags = { $in: filters.tags };
   }
-  
+
   // Filter by importance
   if (filters.minImportance) {
     query.importance = { $gte: filters.minImportance };
   }
-  
+
   // Filter by read status
   if (filters.readStatus) {
     query.readStatus = filters.readStatus;
   }
-  
+
   // Full-text search on title and notes
   if (filters.search) {
     query.$text = { $search: filters.search };
   }
-  
+
   // Sort
   const sortOptions = {};
   const sortField = filters.sortBy || 'savedAt';
   sortOptions[sortField] = filters.sortOrder === 'asc' ? 1 : -1;
-  
+
   return await SavedPaper.find(query)
     .sort(sortOptions)
     .skip((filters.page - 1) * filters.limit)
@@ -417,6 +433,7 @@ async searchSavedPapers(workspaceId, filters) {
 ### Why Denormalize?
 
 SavedPaper stores denormalized data (paperTitle, paperAuthors, pdfUrl) to:
+
 - Avoid JOIN on every query
 - Show paper info without fetching Paper document
 - Handle paper deletion gracefully
@@ -427,23 +444,23 @@ SavedPaper stores denormalized data (paperTitle, paperAuthors, pdfUrl) to:
 async savePaper(paperId, workspaceId, user) {
   // Get paper details
   const paper = await Paper.findById(paperId);
-  
+
   if (!paper) {
     throw new ApiError("Paper not found", 404);
   }
-  
+
   // Create SavedPaper with denormalized data
   const savedPaper = await SavedPaper.create({
     paperId,
     workspaceId,
     savedBy: user.id,
-    
+
     // Denormalized fields
     paperTitle: paper.title,
     paperAuthors: paper.authors,
     pdfUrl: paper.pdfUrl
   });
-  
+
   return savedPaper;
 }
 ```
@@ -455,7 +472,7 @@ If paper details change, update all SavedPapers:
 ```javascript
 async updatePaperInSavedPapers(paperId, updates) {
   const { title, authors, pdfUrl } = updates;
-  
+
   await SavedPaper.updateMany(
     { paperId },
     {
@@ -504,7 +521,7 @@ async getWorkspaceStats(workspaceId) {
       }
     }
   ]);
-  
+
   return stats[0];
 }
 ```
@@ -514,6 +531,7 @@ async getWorkspaceStats(workspaceId) {
 ### Saved Papers List
 
 **Columns:**
+
 - Paper title
 - Authors
 - Read status (badge)
@@ -523,6 +541,7 @@ async getWorkspaceStats(workspaceId) {
 - Folder
 
 **Actions:**
+
 - View details
 - Move to folder
 - Add/edit notes
@@ -530,6 +549,7 @@ async getWorkspaceStats(workspaceId) {
 - Open PDF
 
 **Filters (Sidebar):**
+
 - Folder selector
 - Read status filter
 - Importance range
@@ -539,6 +559,7 @@ async getWorkspaceStats(workspaceId) {
 ### Paper Detail View
 
 **Sections:**
+
 1. **Paper Info**
    - Title, authors
    - PDF viewer or download
@@ -562,14 +583,14 @@ async getWorkspaceStats(workspaceId) {
 
 ## Common Issues & Solutions
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Duplicate saves | No uniqueness check | Check paperId+workspaceId before save |
+| Issue                   | Cause                            | Solution                                  |
+| ----------------------- | -------------------------------- | ----------------------------------------- |
+| Duplicate saves         | No uniqueness check              | Check paperId+workspaceId before save     |
 | Denormalized data stale | Paper updated but SavedPaper not | Update all SavedPapers when Paper changes |
-| Slow search | Missing text index | Add full-text search index |
-| Tags not searchable | No tag index | Index tags array field |
-| Highlights lost | Document update overwrites | Use $push for array operations |
-| Out of memory | Too many highlights | Archive old highlights |
+| Slow search             | Missing text index               | Add full-text search index                |
+| Tags not searchable     | No tag index                     | Index tags array field                    |
+| Highlights lost         | Document update overwrites       | Use $push for array operations            |
+| Out of memory           | Too many highlights              | Archive old highlights                    |
 
 ## Best Practices
 
@@ -610,4 +631,3 @@ async getWorkspaceStats(workspaceId) {
 
 **Module Version**: 1.0.0
 **Last Updated**: March 28, 2024
-

@@ -55,10 +55,12 @@ All API responses follow this standard format:
 ```
 
 **Indexes**:
+
 - `email`: Unique ascending
 - `username`: Unique sparse ascending
 
 **Key Methods** (from UserService):
+
 - `signupUser(userData)`: Register new user
 - `verifyOtp(otp)`: Verify OTP and activate account
 - `resendOtp(token)`: Send new OTP
@@ -67,9 +69,10 @@ All API responses follow this standard format:
 - `hashPassword(password)`: Secure hash
 
 **Usage**:
+
 ```javascript
-import User from './model.js';
-import userServices from './services.js';
+import User from "./model.js";
+import userServices from "./services.js";
 
 const userDb = new userServices(User);
 const user = await userDb.findOne({ email });
@@ -100,13 +103,16 @@ const user = await userDb.findOne({ email });
 ```
 
 **Indexes**:
+
 - `owner`: Ascending (query workspaces by owner)
 - `inviteCode`: Unique (find by invite code)
 
 **Schema Hooks**:
+
 - `pre('save')`: Auto-assign color if not provided
 
 **Key Methods** (from WorkspaceService):
+
 - `createWorkspace({ title, user })`: Create new workspace
 - `getOwnerWorkspaces(user)`: Get owned workspaces with details
 - `getAllWorkspaces(user)`: Get owned + joined workspaces
@@ -116,18 +122,20 @@ const user = await userDb.findOne({ email });
 - `getWorkspacePipeline()`: Complex aggregation
 
 **Relationships**:
+
 - `owner` → User (one user owns many workspaces)
 - `members[].user` → User (many users are members)
 
 **Usage**:
+
 ```javascript
-import Workspace from './model.js';
-import workspaceServices from './services.js';
+import Workspace from "./model.js";
+import workspaceServices from "./services.js";
 
 const workspaceDb = new workspaceServices(Workspace);
-const workspace = await workspaceDb.createWorkspace({ 
-  title: "AI Research", 
-  user: req.user 
+const workspace = await workspaceDb.createWorkspace({
+  title: "AI Research",
+  user: req.user,
 });
 ```
 
@@ -152,11 +160,13 @@ const workspace = await workspaceDb.createWorkspace({
 ```
 
 **Indexes**:
+
 - `token`: Unique (lookup invitations by token)
 - `status`: Ascending (find pending invitations)
 - `expiresAt`: (TTL index for auto-cleanup)
 
 **Validation**:
+
 - Only one pending invitation per email+workspaceId combination
 - Token must be valid and not expired
 - Email address must not already be workspace member
@@ -180,6 +190,7 @@ const workspace = await workspaceDb.createWorkspace({
 ```
 
 **Capabilities**:
+
 - Hierarchical structure (subfolders)
 - Only root folders have `parentFolder: null`
 - Created by member, editable/deletable by owner or creator
@@ -205,6 +216,7 @@ const workspace = await workspaceDb.createWorkspace({
 ```
 
 **Features**:
+
 - Same paper can be saved in multiple workspaces
 - Different notes per workspace
 - Accessible by all workspace members
@@ -241,6 +253,7 @@ const workspace = await workspaceDb.createWorkspace({
 ```
 
 **Real-time Events** (Socket.io):
+
 - `message:new`: New message posted
 - `message:deleted`: Message deleted
 - `user:typing`: User typing indicator
@@ -351,8 +364,12 @@ POST   /api/papers/:id/chat                  → Post to discussion
   "message": "Data retrieved",
   "data": {
     "items": [
-      { /* item 1 */ },
-      { /* item 2 */ }
+      {
+        /* item 1 */
+      },
+      {
+        /* item 2 */
+      }
     ],
     "pagination": {
       "total": 100,
@@ -412,6 +429,7 @@ Authorization: Bearer <access-token>
 ```
 
 **Token Structure** (JWT):
+
 ```javascript
 {
   id: "507f1f77bcf86cd799439011",
@@ -426,18 +444,18 @@ Authorization: Bearer <access-token>
 
 ## Status Codes
 
-| Code | Meaning | Common Cause |
-|------|---------|-------------|
-| 200 | OK | Request succeeded |
-| 201 | Created | Resource created |
-| 400 | Bad Request | Invalid input/missing fields |
-| 401 | Unauthorized | Missing/invalid auth token |
-| 403 | Forbidden | Insufficient permissions |
-| 404 | Not Found | Resource doesn't exist |
-| 409 | Conflict | Resource exists/constraint violation |
-| 422 | Unprocessable Entity | Validation error |
-| 500 | Server Error | Unexpected error |
-| 503 | Service Unavailable | Database/external service down |
+| Code | Meaning              | Common Cause                         |
+| ---- | -------------------- | ------------------------------------ |
+| 200  | OK                   | Request succeeded                    |
+| 201  | Created              | Resource created                     |
+| 400  | Bad Request          | Invalid input/missing fields         |
+| 401  | Unauthorized         | Missing/invalid auth token           |
+| 403  | Forbidden            | Insufficient permissions             |
+| 404  | Not Found            | Resource doesn't exist               |
+| 409  | Conflict             | Resource exists/constraint violation |
+| 422  | Unprocessable Entity | Validation error                     |
+| 500  | Server Error         | Unexpected error                     |
+| 503  | Service Unavailable  | Database/external service down       |
 
 ---
 
@@ -523,30 +541,30 @@ EXTERNAL_SERVICE_ERROR        → External API call failed
 
 Every request passes through:
 
-```
-1. Express middleware (cors, bodyParser, cookieParser)
-2. Route handler
-3. Specific middlewares (auth, validation)
-4. Controller
-5. Service layer
-6. Database queries
+```mermaid
+flowchart TD
+  A[Express middleware CORS body parser cookie parser] --> B[Route handler]
+  B --> C[Specific middleware auth and validation]
+  C --> D[Controller]
+  D --> E[Service layer]
+  E --> F[Database queries]
 ```
 
 **Common Middleware**:
 
 ```javascript
-import { checkAccessToken } from '../middlewares/authMiddleware.js';
-import { validateInputs } from '../middlewares/formValidation.js';
-import { uploadFile } from '../middlewares/s3UploadMiddleware.js';
+import { checkAccessToken } from "../middlewares/authMiddleware.js";
+import { validateInputs } from "../middlewares/formValidation.js";
+import { uploadFile } from "../middlewares/s3UploadMiddleware.js";
 
 // Protect route with auth
-router.post('/private', checkAccessToken, controller.method);
+router.post("/private", checkAccessToken, controller.method);
 
 // Validate inputs
-router.post('/create', validateInputs(schema), controller.method);
+router.post("/create", validateInputs(schema), controller.method);
 
 // Handle file upload
-router.post('/upload', uploadFile.single('file'), controller.method);
+router.post("/upload", uploadFile.single("file"), controller.method);
 ```
 
 ---
@@ -586,14 +604,14 @@ export const config = {
   AWS_REGION: process.env.AWS_REGION,
   CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN,
   PORT: process.env.PORT || 5000,
-  NODE_ENV: process.env.NODE_ENV
+  NODE_ENV: process.env.NODE_ENV,
 };
 
 export const constants = {
   VERIFICATION_EMAIL_SUBJECT: "Verify your email",
   OTP_EXPIRY_MINUTES: 5,
   TOKEN_EXPIRY: "20m",
-  REFRESH_TOKEN_EXPIRY: "7d"
+  REFRESH_TOKEN_EXPIRY: "7d",
 };
 ```
 
@@ -655,4 +673,3 @@ Authorization: Bearer {{access_token}}
 - [ ] Setup Socket.io for real-time
 
 ---
-
