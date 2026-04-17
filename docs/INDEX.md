@@ -89,31 +89,29 @@ Complete list and guide for all documentation files in the Research Zone Backend
 
 ## 📖 Documentation Structure
 
-```mermaid
-flowchart TD
-    D[docs] --> DR[README.md overview and concepts]
-    D --> DA[API_REFERENCE.md endpoints and models]
-    D --> DARCH[ARCHITECTURE.md system design]
-    D --> DDEV[DEVELOPMENT.md setup and workflow]
-    D --> DAG[AGENT_GUIDELINES.md coding standards]
-    D --> DI[INDEX.md]
-    D --> DM[modules]
-
-    DM --> DMA[authentication]
-    DM --> DMW[workspaces]
-    DM --> DMP[papers]
-    DM --> DMC[chat]
-    DM --> DMPC[paper-chat]
-    DM --> DMF[folders]
-    DM --> DMS[saved-papers]
-
-    DMA --> DMAR[README.md user auth OTP JWT]
-    DMW --> DMWR[README.md workspace teams permissions]
-    DMP --> DMPR[README.md uploads S3 metadata search]
-    DMC --> DMCR[README.md realtime workspace chat]
-    DMPC --> DMPCR[README.md paper discussions]
-    DMF --> DMFR[README.md paper organization]
-    DMS --> DMSR[README.md annotations and highlights]
+```
+docs/
+├── README.md                          # Start here - Overview & concepts
+├── API_REFERENCE.md                   # API endpoints & data models
+├── ARCHITECTURE.md                    # System design & relationships
+├── DEVELOPMENT.md                     # Setup, debugging, workflow
+├── AGENT_GUIDELINES.md                # MANDATORY - Coding standards & patterns
+├── INDEX.md                           # This file
+└── modules/
+    ├── authentication/
+    │   └── README.md                  # User auth, OTP, JWT, multi-provider
+    ├── workspaces/
+    │   └── README.md                  # Workspace creation, teams, permissions
+    ├── papers/
+    │   └── README.md                  # Paper uploads, S3, metadata, search
+    ├── chat/
+    │   └── README.md                  # Real-time workspace messaging, Socket.io
+    ├── paper-chat/
+    │   └── README.md                  # Paper discussions, nested messages
+    ├── folders/
+    │   └── README.md                  # Paper organization, hierarchies
+    └── saved-papers/
+        └── README.md                  # User annotations, highlights, filtering
 ```
 
 ## 🔍 Search Guide

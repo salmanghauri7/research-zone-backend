@@ -541,13 +541,13 @@ EXTERNAL_SERVICE_ERROR        → External API call failed
 
 Every request passes through:
 
-```mermaid
-flowchart TD
-  A[Express middleware CORS body parser cookie parser] --> B[Route handler]
-  B --> C[Specific middleware auth and validation]
-  C --> D[Controller]
-  D --> E[Service layer]
-  E --> F[Database queries]
+```
+1. Express middleware (cors, bodyParser, cookieParser)
+2. Route handler
+3. Specific middlewares (auth, validation)
+4. Controller
+5. Service layer
+6. Database queries
 ```
 
 **Common Middleware**:

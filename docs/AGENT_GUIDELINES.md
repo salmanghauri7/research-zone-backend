@@ -31,11 +31,14 @@ This document provides essential guidelines for coding agents and developers wor
 
 Every module must follow this 3-layer architecture:
 
-```mermaid
-flowchart TD
-  A[Route Layer routes.js] --> B[Controller Layer controller.js]
-  B --> C[Service Layer services.js]
-  C --> D[Database Layer model.js and BaseRepository]
+```
+Route Layer (routes.js)
+    ↓
+Controller Layer (controller.js)
+    ↓
+Service Layer (services.js)
+    ↓
+Database Layer (model.js + BaseRepository)
 ```
 
 **Layer Responsibilities:**

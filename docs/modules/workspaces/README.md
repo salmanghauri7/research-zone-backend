@@ -95,25 +95,23 @@ The Workspaces Module enables users to create collaborative workspaces, manage t
 
 ### File Structure
 
-```mermaid
-flowchart TD
-  W[src/modules/workspaces] --> WC[controller.js API handlers]
-  W --> WM[model.js Workspace schema]
-  W --> WR[routes.js workspace endpoints]
-  W --> WS[services.js business logic]
-  W --> WI[invitationModel.js invitation schema]
-  W --> WF[folders]
-  W --> WSP[saved-papers]
-
-  WF --> WFC[controller.js]
-  WF --> WFM[model.js]
-  WF --> WFR[routes.js]
-  WF --> WFS[services.js]
-
-  WSP --> WSPC[controller.js]
-  WSP --> WSPM[model.js]
-  WSP --> WSPR[routes.js]
-  WSP --> WSPS[services.js]
+```
+src/modules/workspaces/
+├── controller.js           # API request handlers
+├── model.js               # Workspace MongoDB schema
+├── routes.js              # Workspace endpoints
+├── services.js            # Business logic
+├── invitationModel.js      # Invitation schema
+├── folders/
+│   ├── controller.js
+│   ├── model.js
+│   ├── routes.js
+│   └── services.js
+└── saved-papers/
+    ├── controller.js
+    ├── model.js
+    ├── routes.js
+    └── services.js
 ```
 
 ### Layer Responsibilities

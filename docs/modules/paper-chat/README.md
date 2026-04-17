@@ -29,15 +29,10 @@ The Paper-Chat Module manages discussions specific to individual research papers
 
 ### Access Control
 
-```mermaid
-flowchart TD
-  A[Paper-chat action request] --> B{User is workspace member}
-  B -->|No| C[Deny access]
-  B -->|Yes| D{Action type}
-  D -->|View or Send| E[Allow]
-  D -->|Edit or Delete| F{Author or Workspace Owner}
-  F -->|Yes| E
-  F -->|No| C
+```
+- View paper-chat: Workspace members only
+- Send message: Workspace members only
+- Edit/delete: Message author or workspace owner
 ```
 
 ### AI Summaries
@@ -50,13 +45,13 @@ flowchart TD
 
 ### File Structure
 
-```mermaid
-flowchart TD
-  PC[src/modules/paper-chat] --> PCC[controller.js API handling]
-  PC --> PCM[model.js conversation schema]
-  PC --> PCCM[conversationModel.js conversation model]
-  PC --> PCR[route.js API endpoints]
-  PC --> PCS[services.js business logic]
+```
+src/modules/paper-chat/
+├── controller.js          # API request handling
+├── model.js              # Conversation schema
+├── conversationModel.js   # Conversation-specific schema
+├── route.js              # API endpoints
+└── services.js           # Business logic
 ```
 
 ### Data Design
@@ -342,23 +337,24 @@ workspaceId: ObjectId (required)
 
 ### Relationship
 
-```mermaid
-flowchart TD
-  P[Paper one] <--> C[Conversation one]
-  C --> M[messages array]
-  M --> MSG[Message sender content reactions]
+```
+Paper (1) ← → (1) Conversation
+         ↓
+     messages[]
+         ↓
+    Message { sender, content, reactions }
 ```
 
 ### Workflow
 
-```mermaid
-flowchart TD
-  A[User saves paper to workspace] --> B[User clicks Start discussion]
-  B --> C[Conversation created automatically]
-  C --> D[User sends message]
-  D --> E[Message added to conversation messages]
-  E --> F[Real-time broadcast to workspace]
-  F --> G[Other members see discussion in paper view]
+```
+1. User saves paper to workspace
+2. Clicks "Start discussion"
+3. Conversation created automatically
+4. User types and sends message
+5. Message added to conversation.messages[]
+6. Real-time broadcast to workspace
+7. Other members see discussion in paper view
 ```
 
 ### Checking Paper Accessibility

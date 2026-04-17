@@ -59,12 +59,12 @@ The Authentication Module is a critical component of the Research Zone backend t
 
 ### File Structure
 
-```mermaid
-flowchart TD
-  U[src/modules/users] --> UC[controller.js API handlers and validation]
-  U --> UM[model.js User schema]
-  U --> UR[routes.js endpoint definitions]
-  U --> US[services.js business logic]
+```
+src/modules/users/
+├── controller.js      # API request handlers, request/response validation
+├── model.js          # MongoDB schema and User model
+├── routes.js         # API endpoint definitions
+└── services.js       # Business logic implementation
 ```
 
 ### Layer Responsibilities

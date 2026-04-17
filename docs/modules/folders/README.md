@@ -42,33 +42,29 @@ The Folders Module enables organization of saved papers within workspaces throug
 
 ### File Structure
 
-```mermaid
-flowchart TD
-  F[src/modules/workspaces/folders] --> FC[controller.js API handling]
-  F --> FM[model.js folder schema]
-  F --> FR[routes.js API endpoints]
-  F --> FS[services.js business logic]
+```
+src/modules/workspaces/folders/
+├── controller.js      # API request handling
+├── model.js          # Folder schema
+├── routes.js         # API endpoints
+└── services.js       # Business logic
 ```
 
 ### Folder Hierarchy Representation
 
-```mermaid
-flowchart TD
-  W[Workspace] --> ML[Folder ML Papers]
-  W --> TR[Folder To Review]
-  W --> UP[Paper Unsorted Paper]
-
-  ML --> CV[Subfolder Computer Vision]
-  ML --> NLP[Subfolder NLP]
-  ML --> AIN[Paper Attention is All You Need]
-
-  CV --> R[Paper ResNet]
-  CV --> VT[Paper Vision Transformer]
-
-  NLP --> B[Paper BERT]
-  NLP --> G[Paper GPT-4]
-
-  TR --> SNP[Paper Some New Paper]
+```
+Workspace
+├── Folder: "ML Papers"
+│   ├── Subfolder: "Computer Vision"
+│   │   ├── Paper: "ResNet"
+│   │   └── Paper: "Vision Transformer"
+│   ├── Subfolder: "NLP"
+│   │   ├── Paper: "BERT"
+│   │   └── Paper: "GPT-4"
+│   └── Paper: "Attention is All You Need"
+├── Folder: "To Review"
+│   └── Paper: "Some New Paper"
+└── Paper: "Unsorted Paper"
 ```
 
 ## Database Schema

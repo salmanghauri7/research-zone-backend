@@ -55,23 +55,47 @@ Welcome to the Research Zone Backend documentation. This folder contains compreh
 
 ### Architecture Diagram
 
-```mermaid
-flowchart TD
-    FE[Frontend React] --> BE[Express Backend Server Port 5000]
-    BE --> CM[Core Modules]
-    CM --> AUTH[Auth]
-    CM --> WS[Workspaces]
-    CM --> PAP[Papers]
-    CM --> CHAT[Chat]
-    CM --> FOL[Folders]
-    CM --> USR[Users]
-    CM --> DB[Database Layer<br/>BaseRepository + Mongoose Models]
-    DB --> EXT[External Services]
-    EXT --> MONGO[MongoDB]
-    EXT --> MAIL[Email Nodemailer]
-    EXT --> AWS[AWS S3 and CloudFront]
-    EXT --> GOOG[Google OAuth]
-    EXT --> SIO[Socket.io Realtime]
+```
+┌─────────────────────────────────────────────────────────┐
+│                  Frontend (React)                       │
+│                                                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │  Auth UI     │  │ Workspace UI │  │  Papers UI   │ │
+│  └──────────────┘  └──────────────┘  └──────────────┘ │
+└─────────────────────────────────────────────────────────┘
+                            ↓
+         ┌──────────────────────────────────────┐
+         │     Express.js Backend Server       │
+         │         (Port 5000)                 │
+         └──────────────────────────────────────┘
+                            ↓
+     ┌─────────────────────────────────────────────────────┐
+     │                 Core Modules                        │
+     │  ┌──────────┐ ┌──────────┐ ┌──────────┐           │
+     │  │   Auth   │ │Workspaces│ │  Papers  │           │
+     │  └──────────┘ └──────────┘ └──────────┘           │
+     │  ┌──────────┐ ┌──────────┐ ┌──────────┐           │
+     │  │  Chat    │ │ Folders  │ │   Users  │           │
+     │  └──────────┘ └──────────┘ └──────────┘           │
+     └─────────────────────────────────────────────────────┘
+                    ↓ Uses Services ↓
+     ┌──────────────────────────────────────┐
+     │      Database Layer                  │
+     │  - BaseRepository (ORM abstraction)   │
+     │  - Mongoose Models                   │
+     └──────────────────────────────────────┘
+                    ↓
+     ┌──────────────────────────────────────────────────────┐
+     │         External Services                            │
+     │  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+     │  │ MongoDB  │ │   Email  │ │   AWS    │            │
+     │  │          │ │(Nodemailer)│ S3/CF   │            │
+     │  └──────────┘ └──────────┘ └──────────┘            │
+     │  ┌──────────┐ ┌──────────┐                          │
+     │  │  Google  │ │ Socket.io │                          │
+     │  │  OAuth   │ │(Real-time)│                          │
+     │  └──────────┘ └──────────┘                          │
+     └──────────────────────────────────────────────────────┘
 ```
 
 ## Technology Stack
@@ -105,110 +129,127 @@ Cookie Parser       - HTTP cookie handling
 
 ## Directory Structure
 
-```mermaid
-flowchart TD
-    SRC[src] --> SERVER[server.js entry point]
-    SRC --> CFG[config]
-    SRC --> CONST[constants]
-    SRC --> MID[middlewares]
-    SRC --> MOD[modules]
-    SRC --> ROUTES[routes]
-    SRC --> UTILS[utils]
-    SRC --> AGG[aggregations]
-    SRC --> VAL[validations]
-
-    CFG --> DBC[dbConfig.js]
-    CFG --> SOC[socketConfig.js]
-
-    CONST --> CCFG[config.js]
-    CONST --> MSG[messages.js]
-
-    MID --> AM[authMiddleware.js]
-    MID --> FV[formValidation.js]
-    MID --> S3[s3UploadMiddleware.js]
-    MID --> SAM[socketAuthMiddleware.js]
-
-    MOD --> AU[authentication users]
-    MOD --> WS[workspaces]
-    MOD --> PAP[papers]
-    MOD --> CH[chat]
-    MOD --> PCH[paper-chat]
-
-    AU --> AUC[controller.js]
-    AU --> AUM[model.js]
-    AU --> AUR[routes.js]
-    AU --> AUS[services.js]
-
-    WS --> WSC[controller.js]
-    WS --> WSM[model.js]
-    WS --> WSR[routes.js]
-    WS --> WSS[services.js]
-    WS --> WSI[invitationModel.js]
-    WS --> WSF[folders]
-    WS --> WSSP[saved-papers]
-
-    ROUTES --> RI[index.js route aggregation]
-
-    UTILS --> UAR[apiResponse.js]
-    UTILS --> UAE[apiError.js]
-    UTILS --> UBR[baseRepository.js]
-    UTILS --> UJWT[generateJWT.js]
-    UTILS --> UOTP[generateOtp.js]
-    UTILS --> UML[sendMail.js]
-    UTILS --> UCFS[cloudFrontSigner.js]
-    UTILS --> UET[emailTemplates]
-
-    UET --> UET1[signupOtpTemp.js]
-    UET --> UET2[invitationTemp.js]
-
-    AGG --> AGW[workspaces]
-    AGG --> AGC[chat]
-    AGG --> AGS[saved-papers]
-
-    VAL --> VV[validation.js]
+```
+src/
+├── server.js                    # Entry point
+├── config/
+│   ├── dbConfig.js             # MongoDB connection
+│   └── socketConfig.js         # Socket.io setup
+├── constants/
+│   ├── config.js               # App configuration
+│   └── messages.js             # Error/success messages
+├── middlewares/
+│   ├── authMiddleware.js       # JWT verification
+│   ├── formValidation.js       # Request validation
+│   ├── s3UploadMiddleware.js   # File upload handling
+│   └── socketAuthMiddleware.js # Socket authentication
+├── modules/                     # Feature modules
+│   ├── authentication/ (users/)
+│   │   ├── controller.js
+│   │   ├── model.js
+│   │   ├── routes.js
+│   │   └── services.js
+│   ├── workspaces/
+│   │   ├── controller.js
+│   │   ├── model.js
+│   │   ├── routes.js
+│   │   ├── services.js
+│   │   ├── invitationModel.js
+│   │   ├── folders/
+│   │   └── saved-papers/
+│   ├── papers/
+│   ├── chat/
+│   ├── paper-chat/
+│   └── ...
+├── routes/
+│   └── index.js                # Route aggregation
+├── utils/
+│   ├── apiResponse.js          # Response formatting
+│   ├── apiError.js             # Error handling
+│   ├── baseRepository.js       # Database abstraction
+│   ├── generateJWT.js          # Token generation
+│   ├── generateOtp.js          # OTP generation
+│   ├── sendMail.js             # Email service
+│   ├── cloudFrontSigner.js     # CDN security
+│   └── emailTemplates/
+│       ├── signupOtpTemp.js
+│       └── invitationTemp.js
+├── aggregations/               # MongoDB aggregation pipelines
+│   ├── workspaces/
+│   ├── chat/
+│   └── saved-papers/
+└── validations/
+    └── validation.js           # Input validation schemas
 ```
 
 ## Data Flow Examples
 
 ### User Registration Flow
 
-```mermaid
-flowchart TD
-    A[User submits signup form] --> B[Controller validates request]
-    B --> C[Service generates OTP and hashes password]
-    C --> D[Database create or update user]
-    D --> E[Service sends verification email]
-    E --> F{Email sent successfully}
-    F -->|Yes| G[Return signup token]
-    F -->|No| H[Rollback user record]
-    G --> I[Frontend shows OTP verification screen]
-    I --> J[User enters OTP]
-    J --> K[Controller verifies OTP]
-    K --> L[Service marks user verified]
-    L --> M[Service creates refresh token]
-    M --> N[Service generates access token]
-    N --> O[Service creates personal workspace]
-    O --> P[Response user profile and access token]
-    P --> Q[Frontend stores token and redirects to workspace]
+```
+User submits signup form
+         ↓
+Controller validates request
+         ↓
+Service generates OTP + hash password
+         ↓
+Database: Create/Update user record
+         ↓
+Service sends verification email
+         ↓
+Email sent successfully?
+  - YES → Return signup token
+  - NO  → Rollback user record
+         ↓
+Frontend: Display OTP verification screen
+         ↓
+User enters OTP
+         ↓
+Controller verifies OTP
+         ↓
+Service: Mark user as verified
+         ↓
+Service: Create refresh token
+         ↓
+Service: Generate access token
+         ↓
+Service: Create personal workspace
+         ↓
+Response: User profile + Access token
+         ↓
+Frontend: Store token, redirect to workspace
 ```
 
 ### Join Workspace Flow
 
-```mermaid
-flowchart TD
-    A[Workspace owner sends invitation] --> B[Controller validates owner status]
-    B --> C[Service checks duplicate invitations]
-    C --> D[Service creates invitation record with JWT]
-    D --> E[Service sends invitation email]
-    E --> F[Invitee clicks tokenized link]
-    F --> G[Frontend verifies invitation token and shows preview]
-    G --> H[Invitee clicks Accept]
-    H --> I[Controller verifies user authentication]
-    I --> J[Service verifies token validity]
-    J --> K[Service adds user to workspace members]
-    K --> L[Service marks invitation accepted]
-    L --> M[Response with workspace details]
-    M --> N[Frontend updates workspace list]
+```
+Workspace owner sends invitation
+         ↓
+Controller validates owner status
+         ↓
+Service checks duplicate invitations
+         ↓
+Service creates invitation record with JWT
+         ↓
+Service sends email with invitation link
+         ↓
+Invitee clicks link (contains token)
+         ↓
+Frontend: Verify token endpoint (shows workspace preview)
+         ↓
+Invitee clicks "Accept"
+         ↓
+Controller verifies user authentication
+         ↓
+Service verifies token validity
+         ↓
+Service adds user to workspace.members
+         ↓
+Service updates invitation status to "accepted"
+         ↓
+Response: Workspace details
+         ↓
+Frontend: Add workspace to user's workspace list
 ```
 
 ## Module Communication
@@ -221,16 +262,24 @@ Each module follows a **3-layer architecture**:
 
 ### Example Request Flow
 
-```mermaid
-flowchart TD
-  A[HTTP Request] --> B[Route matches endpoint]
-  B --> C[Middleware checks authentication]
-  C --> D[Controller extracts data and calls service]
-  D --> E[Service executes business logic]
-  E --> F[BaseRepository performs CRUD]
-  F --> G[Mongoose queries or updates MongoDB]
-  G --> H[Response returned through layers]
-  H --> I[HTTP Response sent to client]
+```
+HTTP Request
+    ↓
+Route matches endpoint
+    ↓
+Middleware: Check authentication
+    ↓
+Controller: Extract data, call service
+    ↓
+Service: Execute business logic
+    ↓
+BaseRepository: Database CRUD operation
+    ↓
+Mongoose: Query/Update MongoDB
+    ↓
+Response returned through layers
+    ↓
+HTTP Response sent to client
 ```
 
 ## Key Concepts to Understand
@@ -370,12 +419,13 @@ NODE_ENV=development
 
 **API Testing Files** (Use with REST Client extension):
 
-```mermaid
-flowchart TD
-    T[api_testing] --> TU[user.http auth endpoints]
-    T --> TF[folder.http folder management]
-    T --> TC[chat.http messaging]
-    T --> TE[embedding-service.http]
+```
+api_testing/
+├── user.http          # Auth endpoints
+├── folder.http        # Folder management
+├── chat.http          # Messaging
+├── embedding-service.http
+└── ...
 ```
 
 Usage: Open any `.http` file in VS Code and click "Send Request"

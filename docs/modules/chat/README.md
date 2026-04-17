@@ -51,30 +51,32 @@ The Chat Module provides real-time messaging for workspaces. It handles sending/
 
 ### File Structure
 
-```mermaid
-flowchart TD
-  C[src/modules/chat] --> CC[controller.js API handling]
-  C --> CM[model.js message schema]
-  C --> CR[routes.js REST endpoints]
-  C --> CS[services.js business logic]
-  C --> CH[socketHandler.js socket events]
-  C --> CP[pipelines.js aggregation queries]
+```
+src/modules/chat/
+├── controller.js      # API request handling
+├── model.js          # Message schema
+├── routes.js         # REST endpoints
+├── services.js       # Business logic
+├── socketHandler.js  # Socket.io event handling
+└── pipelines.js      # Aggregation queries
 ```
 
 ### Real-time Architecture
 
-```mermaid
-sequenceDiagram
-  participant A as Client A
-  participant S as Server
-  participant B as Client B
-
-  A->>S: Socket.io connect
-  A->>S: message:send
-  S->>S: Validate and save
-  S->>S: Persist to database
-  S-->>A: message:new real-time update
-  S-->>B: Broadcast message
+```
+Client A                    Server                  Client B
+   │                          │                        │
+   ├─ Socket.io connect ────►│                        │
+   │                          │                        │
+   ├─ message:send ─────────►│ Validate & Save        │
+   │                          ├─ Save to DB           │
+   │                          │                        │
+   │                          ├─ Broadcast message ───┤
+   │                          ├─ Notify other clients │
+   │       ◄─── message:new ──│                        │
+   │       (Real-time update) │                        │
+   │                          │      ◄─ Receive msg ──┤
+   │                          │                        │
 ```
 
 ## Database Schema

@@ -67,12 +67,12 @@ Papers can be searched by:
 
 ### File Structure
 
-```mermaid
-flowchart TD
-  P[src/modules/papers] --> PC[controller.js API handling]
-  P --> PM[model.js Paper schema]
-  P --> PR[routes.js API endpoints]
-  P --> PS[service.js business logic]
+```
+src/modules/papers/
+├── controller.js      # API request handling
+├── model.js          # Paper MongoDB schema
+├── routes.js         # API endpoints
+└── service.js        # Business logic
 ```
 
 ### Layer Responsibilities
@@ -377,15 +377,25 @@ GET /api/papers/search?title=deep+learning&authors=John&limit=20&page=1
 
 ## File Upload Flow
 
-```mermaid
-flowchart TD
-  A[Client uploads file and metadata] --> B[Controller validates file exists PDF and size less than 50MB]
-  B --> C[Service receives file]
-  C --> D[Upload file to AWS S3]
-  D --> E[Extract metadata from PDF]
-  E --> F[Create paper document with S3 URL]
-  F --> G[Return paper ID and details]
-  G --> H[Client receives response]
+```
+1. Client uploads file with metadata
+         ↓
+   Controller validates:
+   - File exists
+   - File is PDF
+   - Size < 50MB
+         ↓
+   Service receives file
+         ↓
+   2. Upload to AWS S3
+         ↓
+   3. Extract metadata from PDF
+         ↓
+   4. Create paper document with S3 URL
+         ↓
+   5. Return paper ID + details
+         ↓
+   Client receives response
 ```
 
 ### S3 Configuration

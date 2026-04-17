@@ -30,38 +30,36 @@ Users can save papers from:
 
 ### Access Control
 
-```mermaid
-flowchart TD
-  A[Saved-paper action request] --> B{Workspace member}
-  B -->|No| C[Deny]
-  B -->|Yes| D{Action}
-  D -->|Save or View or Share paper| E[Allow]
-  D -->|Edit notes or Remove| F{Saver or Workspace Owner}
-  F -->|Yes| E
-  F -->|No| C
+```
+- Save paper: Workspace member
+- View saved papers: Workspace members
+- Edit notes: Paper saver or workspace owner
+- Remove paper: Paper saver or workspace owner
+- Share SavedPaper: Workspace members (share paper, not SavedPaper record)
 ```
 
 ## Architecture
 
 ### File Structure
 
-```mermaid
-flowchart TD
-  SP[src/modules/workspaces/saved-papers] --> SPC[controller.js API handling]
-  SP --> SPM[model.js SavedPaper schema]
-  SP --> SPR[routes.js API endpoints]
-  SP --> SPS[services.js business logic]
+```
+src/modules/workspaces/saved-papers/
+├── controller.js      # API request handling
+├── model.js          # SavedPaper schema
+├── routes.js         # API endpoints
+└── services.js       # Business logic
 ```
 
 ### Data Relationships
 
-```mermaid
-flowchart TD
-  U[User] --> S[SavedPaper]
-  S <--> P[Paper]
-  S --> W[Workspace]
-  S --> F[Folder optional]
-  P --> M[Metadata]
+```
+User
+  ↓
+SavedPaper ← → Paper
+  ↓           ↓
+Workspace   Metadata
+  ↓
+Folder (optional)
 ```
 
 ## Database Schema
