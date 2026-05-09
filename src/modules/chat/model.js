@@ -73,13 +73,18 @@ const messageSchema = new mongoose.Schema(
     // For papers or images shared during research
     attachments: [
       {
-        
         fileName: String,
         fileKey: String,
         fileSize: Number,
         mimeType: String,
       },
     ],
+    // Client-generated id to match optimistic frontend messages
+    clientId: {
+      type: String,
+      default: null,
+      index: true,
+    },
   },
   { timestamps: true },
 );

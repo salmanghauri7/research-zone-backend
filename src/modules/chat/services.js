@@ -69,8 +69,14 @@ export default class ChatServices extends BaseRepository {
    * @throws {ApiError} If validation fails
    */
   async createMessage(messageData) {
-    const { workspaceId, sender, content, parentMessageId, quotedMessageId } =
-      messageData;
+    const {
+      workspaceId,
+      sender,
+      content,
+      parentMessageId,
+      quotedMessageId,
+      clientId,
+    } = messageData;
 
     // Validate parentMessageId if provided
     if (parentMessageId && !mongoose.Types.ObjectId.isValid(parentMessageId)) {
@@ -128,6 +134,7 @@ export default class ChatServices extends BaseRepository {
       parentMessageId: parentMessageId || null,
       quotedMessageId: quotedMessageId || null,
       attachments: messageData.attachments,
+      clientId: clientId || null,
     });
 
     // If it's a threaded reply, increment parent's reply count

@@ -65,7 +65,6 @@ const handleJoinWorkspace = async (socket, data) => {
 
 const handleSendMessage = async (socket, data) => {
   try {
-    // Validate request data
     if (!data) {
       throw new ApiError("Request data is required", 400);
     }
@@ -76,6 +75,7 @@ const handleSendMessage = async (socket, data) => {
       attachments,
       parentMessageId,
       quotedMessageId,
+      clientId,
     } = data;
     const user = socket.user;
 
@@ -95,6 +95,7 @@ const handleSendMessage = async (socket, data) => {
       parentMessageId,
       quotedMessageId,
       attachments,
+      clientId,
     });
 
     if (attachments && attachments.length > 0) {

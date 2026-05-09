@@ -13,7 +13,7 @@ npm-debug.log
 dist
 
 # Docker-related files
-dockerfile
+Dockerfile
 .dockerignore
 
 # Testing files
