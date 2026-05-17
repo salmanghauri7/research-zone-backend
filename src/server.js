@@ -8,14 +8,14 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { initializeSocket } from "./config/socketConfig.js";
 import { registerChatHandlers } from "./modules/chat/socketHandler.js";
-import "./modules/paper-chat/model.js"; // Initialize ChunkEmbedding collection
+import "./modules/paper-chat/model.js";
 
 const app = express();
 const httpServer = createServer(app);
 
 // middlewares
 app.use(express.json({ limit: "10mb" })); // to parse JSON bodies with a larger limit
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // Log incoming requests for debugging
 app.use((req, res, next) => {
@@ -48,34 +48,13 @@ const startServer = async () => {
 
     await configInit();
 
-    // Log critical config values (don't log secrets)
-    console.log("\n🔧 Configuration Check:");
-    console.log(`   NODE_ENV: ${config.NODE_ENV}`);
-    console.log(`   PORT: ${config.PORT}`);
-    console.log(
-      `   GOOGLE_CLIENT_ID: ${
-        config.GOOGLE_CLIENT_ID ? "✅ Set" : "❌ Missing"
-      }`,
-    );
-    console.log(
-      `   GOOGLE_CLIENT_SECRET: ${
-        config.GOOGLE_CLIENT_SECRET ? "✅ Set" : "❌ Missing"
-      }`,
-    );
-    console.log(
-      `   JWT_SECRET: ${config.JWT_SECRET ? "✅ Set" : "❌ Missing"}`,
-    );
-    console.log(
-      `   MONGO_URI: ${config.MONGO_URI ? "✅ Set" : "❌ Missing"}\n`,
-    );
-
-    console.log(`SMTP_PASS: ${config.SMTP_PASS ? ` Set ` : "❌ Missing"}`);
-
     await connectDb();
 
     // Initialize Socket.IO AFTER config is loaded
     const io = initializeSocket(httpServer);
     registerChatHandlers(io);
+
+    await import("./modules/workspaces/radar/jobs/worker.radar.js");
 
     // 3. Start the server ONLY AFTER the DB is connected
     httpServer.listen(PORT, () => {
@@ -83,7 +62,6 @@ const startServer = async () => {
       console.log(`🔌 Socket.IO is ready for connections`);
     });
   } catch (error) {
-    // 4. If the database connection fails, log it and exit
     console.error("Failed to connect to the database:", error);
     process.exit(1); // Exit the process with a failure code
   }

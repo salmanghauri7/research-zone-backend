@@ -13,7 +13,7 @@ export default class SavedPaperController {
    */
   static async savePaper(req, res) {
     try {
-      const { workspaceId, folderId, title, link, authors, published } =
+      const { workspaceId, folderId, title, link, authors, published, category } =
         req.body;
       const user = req.user;
 
@@ -48,6 +48,7 @@ export default class SavedPaperController {
         link: formattedLink,
         authors: authors || "",
         published: published || "",
+        category
       });
 
       return apiResponse.success(

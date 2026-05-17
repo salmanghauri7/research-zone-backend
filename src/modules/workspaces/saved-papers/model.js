@@ -32,7 +32,10 @@ const savedPaperSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-
+    category: {
+      type: String,
+      default: ""
+    },
     link: {
       type: String,
       required: true,
