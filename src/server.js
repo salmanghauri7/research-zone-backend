@@ -10,6 +10,13 @@ import { initializeSocket } from "./config/socketConfig.js";
 import { registerChatHandlers } from "./modules/chat/socketHandler.js";
 import "./modules/paper-chat/model.js"; // Initialize ChunkEmbedding collection
 
+// GraphQL
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@as-integrations/express5";
+import typeDefs from "./graphql/schema/typeDefs.js";
+import resolvers from "./graphql/resolvers/resolvers.js";
+import { decodeJWT } from "./utils/generateJWT.js";
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -20,8 +27,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Log incoming requests for debugging
 app.use((req, res, next) => {
   console.log(
-    `📨 ${req.method} ${req.path} - Origin: ${
-      req.headers.origin || "No Origin"
+    `📨 ${req.method} ${req.path} - Origin: ${req.headers.origin || "No Origin"
     }`,
   );
   next();
@@ -53,13 +59,11 @@ const startServer = async () => {
     console.log(`   NODE_ENV: ${config.NODE_ENV}`);
     console.log(`   PORT: ${config.PORT}`);
     console.log(
-      `   GOOGLE_CLIENT_ID: ${
-        config.GOOGLE_CLIENT_ID ? "✅ Set" : "❌ Missing"
+      `   GOOGLE_CLIENT_ID: ${config.GOOGLE_CLIENT_ID ? "✅ Set" : "❌ Missing"
       }`,
     );
     console.log(
-      `   GOOGLE_CLIENT_SECRET: ${
-        config.GOOGLE_CLIENT_SECRET ? "✅ Set" : "❌ Missing"
+      `   GOOGLE_CLIENT_SECRET: ${config.GOOGLE_CLIENT_SECRET ? "✅ Set" : "❌ Missing"
       }`,
     );
     console.log(
@@ -72,6 +76,31 @@ const startServer = async () => {
     console.log(`SMTP_PASS: ${config.SMTP_PASS ? ` Set ` : "❌ Missing"}`);
 
     await connectDb();
+
+    // ── GraphQL ────────────────────────────────────────────
+    const apolloServer = new ApolloServer({ typeDefs, resolvers });
+    await apolloServer.start();
+
+    app.use(
+      "/graphql",
+      express.json(),
+      expressMiddleware(apolloServer, {
+        context: async ({ req }) => {
+          // Extract user from Bearer token (same logic as checkAccessToken)
+          let user = null;
+          const authHeader = req.headers.authorization;
+          if (authHeader && authHeader.startsWith("Bearer ")) {
+            try {
+              user = decodeJWT(authHeader.split(" ")[1]);
+            } catch {
+              // Token invalid/expired — user stays null, resolver will throw
+            }
+          }
+          return { user };
+        },
+      }),
+    );
+    console.log(`🚀 GraphQL endpoint ready at http://localhost:${PORT}/graphql`);
 
     // Initialize Socket.IO AFTER config is loaded
     const io = initializeSocket(httpServer);
