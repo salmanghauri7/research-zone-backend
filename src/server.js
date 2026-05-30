@@ -1,6 +1,6 @@
 import express from "express";
 import { createServer } from "http";
-import { config, configInit } from "./constants/config.js";
+import { config } from "./constants/config.js";
 import routes from "./routes/index.js";
 import connectDb from "./config/dbConfig.js";
 import { globalError } from "./utils/apiError.js";
@@ -8,7 +8,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { initializeSocket } from "./config/socketConfig.js";
 import { registerChatHandlers } from "./modules/chat/socketHandler.js";
-import "./modules/paper-chat/model.js"; // Initialize ChunkEmbedding collection
+import "./modules/paper-chat/model.js";
 
 // GraphQL
 import { ApolloServer } from "@apollo/server";
@@ -22,7 +22,7 @@ const httpServer = createServer(app);
 
 // middlewares
 app.use(express.json({ limit: "10mb" })); // to parse JSON bodies with a larger limit
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // Log incoming requests for debugging
 app.use((req, res, next) => {
@@ -106,15 +106,15 @@ const startServer = async () => {
     const io = initializeSocket(httpServer);
     registerChatHandlers(io);
 
-    // 3. Start the server ONLY AFTER the DB is connected
+    await import("./modules/workspaces/radar/jobs/worker.radar.js");
+
     httpServer.listen(PORT, () => {
       console.log(`✅ Server is connected http://localhost:${PORT}`);
       console.log(`🔌 Socket.IO is ready for connections`);
     });
   } catch (error) {
-    // 4. If the database connection fails, log it and exit
     console.error("Failed to connect to the database:", error);
-    process.exit(1); // Exit the process with a failure code
+    process.exit(1);
   }
 };
 

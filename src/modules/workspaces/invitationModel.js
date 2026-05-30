@@ -37,17 +37,16 @@ const workspaceInvitationSchema = new mongoose.Schema(
       default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for efficient queries
 workspaceInvitationSchema.index({ email: 1, workspaceId: 1 });
-workspaceInvitationSchema.index({ token: 1 });
 workspaceInvitationSchema.index({ expiresAt: 1 });
 
 const WorkspaceInvitation = mongoose.model(
   "WorkspaceInvitation",
-  workspaceInvitationSchema
+  workspaceInvitationSchema,
 );
 
 export default WorkspaceInvitation;

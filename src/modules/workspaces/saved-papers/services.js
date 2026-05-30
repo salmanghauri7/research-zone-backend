@@ -25,7 +25,7 @@ export default class SavedPaperServices extends BaseRepository {
       link,
       authors,
       published,
-
+      category
     } = data;
 
     // Validate workspace access
@@ -52,8 +52,9 @@ export default class SavedPaperServices extends BaseRepository {
       folderId: folderId || null,
       title,
       link,
-      authors: authors || "",
-      published: published || "",
+      authors: authors,
+      published: published,
+      category,
     });
 
     return savedPaper;

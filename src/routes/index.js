@@ -6,6 +6,7 @@ import papersRoute from "../modules/papers/route.js";
 import paperChatRoute from "../modules/paper-chat/route.js";
 import folderRoute from "../modules/workspaces/folders/routes.js";
 import savedPaperRoute from "../modules/workspaces/saved-papers/routes.js";
+import radarRoute from "../modules/workspaces/radar/route.js"
 
 export default function routes(app) {
   const apiRoute = express.Router();
@@ -16,6 +17,7 @@ export default function routes(app) {
   apiRoute.use("/paper-chat", paperChatRoute);
   apiRoute.use("/folders", folderRoute);
   apiRoute.use("/saved-papers", savedPaperRoute);
+  apiRoute.use("/radar", radarRoute);
 
   app.use("/api", apiRoute);
 }
