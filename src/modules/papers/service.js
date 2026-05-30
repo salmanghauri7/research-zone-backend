@@ -6,6 +6,8 @@ export default class PapersService {
       throw new Error("Search query is required");
     }
 
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
     try {
       // Calculate pagination offset
       const start = (page - 1) * resultsPerPage;
@@ -13,8 +15,27 @@ export default class PapersService {
       // Construct the arXiv API URL with pagination
       const arxivUrl = `http://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}&start=${start}&max_results=${resultsPerPage}`;
 
-      // Fetch the data from arXiv
-      const response = await fetch(arxivUrl);
+      // Fetch the data from arXiv (retry up to 3 times on 429)
+      let response;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        response = await fetch(arxivUrl);
+
+        if (response.status !== 429) {
+          break;
+        }
+
+        if (attempt < 2) {
+          await sleep(300);
+        }
+      }
+
+      if (response.status === 429) {
+        const rateLimitError = new Error(
+          "Rate limit exceeded for arXiv. Please try again shortly.",
+        );
+        rateLimitError.statusCode = 429;
+        throw rateLimitError;
+      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch from arXiv");
@@ -76,6 +97,9 @@ export default class PapersService {
       };
     } catch (error) {
       console.error("arXiv fetch error:", error);
+      if (error?.statusCode === 429) {
+        throw error;
+      }
       throw new Error("Failed to fetch papers from arXiv");
     }
   }
