@@ -10,6 +10,9 @@ import { errorMessages } from "../../constants/messages.js";
 import Message from "../chat/model.js";
 import User from "../users/model.js";
 import SavedPaper from "./saved-papers/model.js";
+import Folder from "./folders/model.js";
+import Radar from "./radar/radarModel.js";
+import RadarSync from "./radar/radarSyncModel.js";
 import {
   buildAllWorkspacesPipeline,
   buildOwnerWorkspacesPipeline,
@@ -232,6 +235,10 @@ export default class workspaceServices extends BaseRepository {
       // If owner is leaving, delete the entire workspace and all related data
       await Message.deleteMany({ workspaceId });
       await WorkspaceInvitation.deleteMany({ workspaceId });
+      await SavedPaper.deleteMany({ workspaceId });
+      await Folder.deleteMany({ workspaceId });
+      await Radar.deleteMany({ workspaceId });
+      await RadarSync.deleteMany({ workspaceId });
       await this.deleteById(workspaceId);
 
       return {

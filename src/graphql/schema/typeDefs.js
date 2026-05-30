@@ -57,7 +57,16 @@ const typeDefs = `#graphql
     activityData: [ActivityPoint!]!
   }
 
+  """Global statistics for a user's dashboard."""
+  type UserDashboardStats {
+    totalWorkspaces: Int!
+    totalPapers: Int!
+  }
+
   type Query {
+    """Get global stats for the authenticated user."""
+    userDashboardStats: UserDashboardStats!
+
     """Get all workspaces the authenticated user belongs to (owned + member)."""
     allWorkspaces: [Workspace!]!
 
