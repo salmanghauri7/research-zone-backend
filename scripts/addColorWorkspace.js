@@ -14,11 +14,9 @@ async function addColors() {
   ];
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("Mongo Db connected");
     const workspaces = await Workspace.find({
       $or: [{ color: { $exists: false } }, { color: null }],
     });
-    console.log(`Found ${workspaces.length} workspaces to update.`);
 
     const updatedPromises = workspaces.map((workspace) => {
       const randomColor = colors[Math.floor(Math.random() * colors.length)];
