@@ -1,6 +1,6 @@
 import express from "express";
 import { createServer } from "http";
-import { config, configInit } from "./constants/config.js";
+import { config } from "./constants/config.js";
 import routes from "./routes/index.js";
 import connectDb from "./config/dbConfig.js";
 import { globalError } from "./utils/apiError.js";
@@ -44,26 +44,20 @@ const PORT = config.PORT || 5000;
 
 const startServer = async () => {
   try {
-    // load the config.js for development or production
-
-    await configInit();
-
     await connectDb();
 
-    // Initialize Socket.IO AFTER config is loaded
     const io = initializeSocket(httpServer);
     registerChatHandlers(io);
 
     await import("./modules/workspaces/radar/jobs/worker.radar.js");
 
-    // 3. Start the server ONLY AFTER the DB is connected
     httpServer.listen(PORT, () => {
       console.log(`✅ Server is connected http://localhost:${PORT}`);
       console.log(`🔌 Socket.IO is ready for connections`);
     });
   } catch (error) {
     console.error("Failed to connect to the database:", error);
-    process.exit(1); // Exit the process with a failure code
+    process.exit(1);
   }
 };
 
