@@ -72,6 +72,7 @@ export default class PapersService {
           const pdfNode = entry.link.find((l) => l["@_title"] === "pdf");
           if (pdfNode) pdfLink = pdfNode["@_href"];
         }
+        const category = entry["arxiv:primary_category"]?.["@_term"] || "";
 
         return {
           id: entry.id || String(index),
@@ -80,6 +81,7 @@ export default class PapersService {
           published: new Date(entry.published).toISOString().split("T")[0],
           summary: entry.summary.trim(),
           link: entry.id,
+          category,
         };
       });
 

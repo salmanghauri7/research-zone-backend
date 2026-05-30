@@ -26,6 +26,9 @@ export const config = {
   CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID,
   EMBEDDING_SERVICE_URL_DEV: process.env.EMBEDDING_SERVICE_URL_DEV,
   EMBEDDING_SERVICE_URL_PROD: process.env.EMBEDDING_SERVICE_URL_PROD,
+  REDIS_HOST: process.env.REDIS_HOST,
+  REDIS_PORT: process.env.REDIS_PORT,
+  GEMINI_API_KEY_FOR_FOR_RADAR: process.env.GEMINI_API_KEY_FOR_FOR_RADAR,
 };
 
 export const constants = {

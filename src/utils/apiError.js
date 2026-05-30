@@ -11,7 +11,6 @@ export class ApiError extends Error {
 }
 
 export function globalError(err, req, res, next) {
-  // default values
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
   const errorCode = err.errorCode || null;

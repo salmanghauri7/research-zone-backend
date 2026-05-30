@@ -14,13 +14,9 @@ export const socketAuthMiddleware = (socket, next) => {
       return next(new Error("Authentication error: Token not provided"));
     }
 
-    // Verify and decode the JWT token
     const user = decodeJWT(token);
 
-    // Attach user data to socket for use in event handlers
     socket.user = user;
-
-    console.log(`🔐 Socket authenticated for user: ${user.email || user._id}`);
 
     next();
   } catch (err) {
