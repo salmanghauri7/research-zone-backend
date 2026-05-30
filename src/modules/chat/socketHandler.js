@@ -1,7 +1,3 @@
-/**
- * Socket.IO event handlers for the chat module
- */
-
 import ChatServices from "./services.js";
 import { ApiError } from "../../utils/apiError.js";
 
@@ -282,9 +278,7 @@ const handleError = (socket, error) => {
  */
 export const registerChatHandlers = (io) => {
   io.on("connection", (socket) => {
-    // socket.user is attached by socketAuthMiddleware
     const user = socket.user;
-    console.log(`🔌 User connected: ${socket.id} (${user.email || user._id})`);
 
     // Register event handlers
     socket.on("join-workspace", (data) => handleJoinWorkspace(socket, data));
@@ -297,8 +291,5 @@ export const registerChatHandlers = (io) => {
     socket.on("disconnect", (reason) => handleDisconnect(socket, reason));
     socket.on("error", (error) => handleError(socket, error));
 
-    // TODO: Add more chat-specific event handlers here
-    // Example events to implement later:
-    // - leave-workspace: Leave a workspace room
   });
 };

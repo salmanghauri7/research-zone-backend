@@ -8,7 +8,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { initializeSocket } from "./config/socketConfig.js";
 import { registerChatHandlers } from "./modules/chat/socketHandler.js";
-import "./modules/paper-chat/model.js"; // Initialize ChunkEmbedding collection
+import "./modules/paper-chat/model.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -46,11 +46,11 @@ const startServer = async () => {
   try {
     await connectDb();
 
-    // Initialize Socket.IO AFTER config is loaded
     const io = initializeSocket(httpServer);
     registerChatHandlers(io);
 
-    // 3. Start the server ONLY AFTER the DB is connected
+    await import("./modules/workspaces/radar/jobs/worker.radar.js");
+
     httpServer.listen(PORT, () => {
       console.log(`✅ Server is connected http://localhost:${PORT}`);
       console.log(`🔌 Socket.IO is ready for connections`);
