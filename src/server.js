@@ -52,8 +52,6 @@ const startServer = async () => {
   try {
     // load the config.js for development or production
 
-    await configInit();
-
     // Log critical config values (don't log secrets)
     console.log("\n🔧 Configuration Check:");
     console.log(`   NODE_ENV: ${config.NODE_ENV}`);
