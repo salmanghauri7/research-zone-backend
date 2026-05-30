@@ -25,6 +25,7 @@ export const errorMessages = {
     TITLE_NOT_FOUND: "Title is not found",
     CREATE_FAILED: "Failed to create Workspace",
     GET_WORKSPACES_FAILED: "Failed to get the workspaces",
+    DASHBOARD_FETCH_FAILED: "Failed to fetch workspace dashboard",
     NOT_FOUND: "Workspace not found",
     NOT_OWNER: "You are not the owner of this workspace",
     ALREADY_MEMBER: "User is already a member of this workspace",
@@ -93,6 +94,7 @@ export const successMessages = {
   WORKSPACE: {
     CREATE_SUCCESS: "Workspace created successfully",
     GET_WORKSPACES_SUCCESS: "Workspaces fetched successfully",
+    DASHBOARD_FETCH_SUCCESS: "Workspace dashboard fetched successfully",
     INVITATION_SENT: "Invitation sent successfully",
     TOKEN_VERIFIED: "Invitation token verified successfully",
     INVITATION_ACCEPTED: "Invitation accepted successfully",

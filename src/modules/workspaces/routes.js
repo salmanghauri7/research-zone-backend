@@ -26,6 +26,12 @@ router.delete(
 );
 
 router.get(
+  "/:workspaceId/dashboard",
+  checkAccessToken,
+  workspaceController.getWorkspaceDashboard,
+);
+
+router.get(
   "/check-role/:workspaceId",
   checkAccessToken,
   workspaceController.checkWorkspaceRole,

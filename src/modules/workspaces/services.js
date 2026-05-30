@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime.js";
 import BaseRepository from "../../utils/baseRepository.js";
@@ -7,6 +8,8 @@ import { invitationTemplate } from "../../utils/emailTemplates/invitationTemp.js
 import { ApiError } from "../../utils/apiError.js";
 import { errorMessages } from "../../constants/messages.js";
 import Message from "../chat/model.js";
+import User from "../users/model.js";
+import SavedPaper from "./saved-papers/model.js";
 import {
   buildAllWorkspacesPipeline,
   buildOwnerWorkspacesPipeline,
@@ -248,6 +251,187 @@ export default class workspaceServices extends BaseRepository {
         deleted: false,
       };
     }
+  }
+
+  async getWorkspaceDashboard({ workspaceId, userId }) {
+    if (!mongoose.Types.ObjectId.isValid(workspaceId)) {
+      throw new ApiError(errorMessages.WORKSPACE.NOT_FOUND, 404);
+    }
+
+    const workspace = await this.findById(workspaceId);
+
+    if (!workspace) {
+      throw new ApiError(errorMessages.WORKSPACE.NOT_FOUND, 404);
+    }
+
+    const isOwner = workspace.owner.toString() === userId.toString();
+    const isMember = workspace.members.some(
+      (member) => member?.user?.toString() === userId.toString(),
+    );
+
+    if (!isOwner && !isMember) {
+      throw new ApiError(errorMessages.WORKSPACE.NOT_MEMBER, 403);
+    }
+
+    const workspaceObjectId = new mongoose.Types.ObjectId(workspaceId);
+
+    const uniqueMemberIds = new Set(
+      workspace.members
+        .map((member) => member?.user?.toString())
+        .filter(Boolean),
+    );
+    uniqueMemberIds.add(workspace.owner.toString());
+
+    const memberObjectIds = [...uniqueMemberIds].map(
+      (id) => new mongoose.Types.ObjectId(id),
+    );
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const sevenDaysAgo = new Date(startOfToday);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+    const now = new Date();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const [
+      users,
+      paperCountsByUser,
+      recentPapersRaw,
+      totalPapers,
+      activityRaw,
+      thisMonthCount,
+      lastMonthCount,
+    ] = await Promise.all([
+      User.find({ _id: { $in: memberObjectIds } })
+        .select("_id firstName lastName username email profilePictureUrl")
+        .lean(),
+      SavedPaper.aggregate([
+        {
+          $match: {
+            workspaceId: workspaceObjectId,
+          },
+        },
+        {
+          $group: {
+            _id: "$userId",
+            papersCount: { $sum: 1 },
+          },
+        },
+      ]),
+      SavedPaper.find({ workspaceId: workspaceObjectId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("_id title authors createdAt")
+        .lean(),
+      SavedPaper.countDocuments({ workspaceId: workspaceObjectId }),
+      SavedPaper.aggregate([
+        {
+          $match: {
+            workspaceId: workspaceObjectId,
+            createdAt: { $gte: sevenDaysAgo },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$createdAt",
+              },
+            },
+            value: { $sum: 1 },
+          },
+        },
+      ]),
+      SavedPaper.countDocuments({
+        workspaceId: workspaceObjectId,
+        createdAt: { $gte: thisMonthStart },
+      }),
+      SavedPaper.countDocuments({
+        workspaceId: workspaceObjectId,
+        createdAt: { $gte: lastMonthStart, $lt: thisMonthStart },
+      }),
+    ]);
+
+    const paperCountMap = new Map(
+      paperCountsByUser.map((item) => [item._id.toString(), item.papersCount]),
+    );
+
+    const topContributors = users
+      .map((member) => {
+        const fullName = `${member.firstName || ""} ${member.lastName || ""}`.trim();
+        const displayName = fullName || member.username || member.email;
+        const papersCount = paperCountMap.get(member._id.toString()) || 0;
+
+        return {
+          _id: member._id,
+          name: displayName,
+          email: member.email,
+          avatar: member.profilePictureUrl,
+          role:
+            workspace.owner.toString() === member._id.toString()
+              ? "Owner"
+              : "Member",
+          papersCount,
+        };
+      })
+      .sort((a, b) => {
+        if (b.papersCount !== a.papersCount) {
+          return b.papersCount - a.papersCount;
+        }
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 8);
+
+    const recentPapers = recentPapersRaw.map((paper) => ({
+      _id: paper._id,
+      title: paper.title,
+      author: paper.authors || "Unknown authors",
+      savedAt: paper.createdAt,
+      tag: "Research",
+    }));
+
+    const activityMap = new Map(activityRaw.map((item) => [item._id, item.value]));
+    const activityData = [];
+
+    for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
+      const currentDate = new Date(sevenDaysAgo);
+      currentDate.setDate(sevenDaysAgo.getDate() + dayOffset);
+
+      const dayKey = currentDate.toISOString().split("T")[0];
+      activityData.push({
+        day: currentDate.toLocaleDateString("en-US", { weekday: "short" }),
+        value: activityMap.get(dayKey) || 0,
+      });
+    }
+
+    const activityChange =
+      lastMonthCount === 0
+        ? thisMonthCount > 0
+          ? 100
+          : 0
+        : Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100);
+
+    return {
+      workspace: {
+        _id: workspace._id,
+        title: workspace.title,
+        description: null,
+        color: workspace.color,
+        createdAt: workspace.createdAt,
+      },
+      stats: {
+        totalMembers: uniqueMemberIds.size,
+        totalPapers,
+        activityChange,
+      },
+      topContributors,
+      recentPapers,
+      activityData,
+    };
   }
 
   async checkUserWorkspaceRole({ workspaceId, user }) {
