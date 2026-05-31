@@ -1,14 +1,8 @@
 import IORedis from "ioredis";
 import { config } from "../constants/config.js";
 
-const redisConfig = {
-    host: config.REDIS_HOST,
-    port: config.REDIS_PORT,
-    password: config.REDIS_PASSWORD || undefined,
-    maxRetriesPerRequest: null
-}
-
-const redisConnection = new IORedis(redisConfig);
+const redisUrl = config.REDIS_URL;
+const redisConnection = new IORedis(redisUrl, {maxRetriesPerRequest: null});
 
 redisConnection.on("connect", () => {
   console.log("🚀 Successfully connected to Redis for BullMQ");

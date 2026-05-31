@@ -51,7 +51,6 @@ const PORT = config.PORT || 5000;
 const startServer = async () => {
   try {
     
-
     await connectDb();
 
     // ── GraphQL ────────────────────────────────────────────
