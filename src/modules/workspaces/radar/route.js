@@ -11,5 +11,10 @@ router.get(
   checkAccessToken,
   RadarController.getNotifications,
 );
+router.post(
+  "/notifications",
+  checkAccessToken,
+  RadarController.saveNotification,
+);
 
 export default router;

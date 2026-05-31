@@ -191,6 +191,38 @@ export default class workspaceController {
     }
   }
 
+  static async getWorkspaceDashboard(req, res) {
+    try {
+      const user = req.user;
+      const { workspaceId } = req.params;
+
+      if (!workspaceId) {
+        throw new ApiError(
+          errorMessages.WORKSPACE.WORKSPACE_ID_NOT_PROVIDED,
+          400,
+        );
+      }
+
+      const dashboard = await workspaceDb.getWorkspaceDashboard({
+        workspaceId,
+        userId: user.id,
+      });
+
+      return apiResponse.success(
+        res,
+        successMessages.WORKSPACE.DASHBOARD_FETCH_SUCCESS,
+        200,
+        dashboard,
+      );
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || errorMessages.WORKSPACE.DASHBOARD_FETCH_FAILED,
+        err.statusCode || 500,
+      );
+    }
+  }
+
   static async checkWorkspaceRole(req, res) {
     try {
       const user = req.user;

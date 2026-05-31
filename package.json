@@ -13,6 +13,9 @@
     "deploy": "npm run docker:build && npm run docker:push && ssh researchzone \"docker pull salmanghauri/node-backend:latest && docker stop backend-container || true && docker rm backend-container || true && docker run -d --name backend-container -p 5000:5000 -e AWS_REGION=ap-south-1 salmanghauri/node-backend:latest\""
   },
   "dependencies": {
+    "3": "^2.1.0",
+    "@apollo/server": "^5.5.1",
+    "@as-integrations/express5": "^1.1.2",
     "@aws-sdk/client-s3": "^3.994.0",
     "@aws-sdk/cloudfront-signer": "^3.993.0",
     "@aws-sdk/s3-request-presigner": "^3.995.0",
@@ -27,6 +30,7 @@
     "express": "^5.1.0",
     "fast-xml-parser": "^5.4.1",
     "google-auth-library": "^10.4.2",
+    "graphql": "^16.14.0",
     "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.2",
     "mermaid": "^11.13.0",

@@ -1,4 +1,3 @@
-import { XMLParser } from "fast-xml-parser";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ApiError } from "../../../utils/apiError.js";
 import BaseRepository from "../../../utils/baseRepository.js";
@@ -7,6 +6,7 @@ import RadarSyncLog from "./radarSyncModel.js";
 import { config } from "../../../constants/config.js";
 import { buildRadarPrompt } from "./radarPrompt.js";
 import { responseSchema } from "./radarPrompt.js";
+import fetchPapersFromSemanticScholar from "../../../utils/fetchPapersFromSemanticScholar.js";
 
 export default class RadarService extends BaseRepository {
   constructor(model) {
@@ -70,55 +70,28 @@ export default class RadarService extends BaseRepository {
   async fetchLatestArxivPapers(category, lookbackDays) {
     try {
       const maxResults = 20;
-      const arxivUrl = `http://export.arxiv.org/api/query?search_query=cat:${encodeURIComponent(category)}&sortBy=submittedDate&sortOrder=descending&start=0&max_results=${maxResults}`;
-      const response = await fetch(arxivUrl);
-
-      if (!response.ok) {
-        throw new ApiError("Failed to fetch from arXiv", response.status);
-      }
-
-      const xmlData = await response.text();
-      const parser = new XMLParser({ ignoreAttributes: false });
-      const jsonData = parser.parse(xmlData);
-
-      let entries = jsonData.feed?.entry || [];
-      if (!Array.isArray(entries)) {
-        entries = [entries];
-      }
-
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - Number(lookbackDays));
+      const fieldsOfStudy = category ? [category] : undefined;
 
-      return entries
-        .filter((entry) => {
-          const published = new Date(entry.published);
-          return !Number.isNaN(published.getTime()) && published >= cutoffDate;
-        })
-        .map((entry, index) => {
-          let authorsList = entry.author || [];
-          if (!Array.isArray(authorsList)) {
-            authorsList = [authorsList];
-          }
+      const { papers } = await fetchPapersFromSemanticScholar({
+        query: category,
+        fieldsOfStudy,
+        limit: maxResults,
+        offset: 0,
+        publishedAfter: cutoffDate,
+      });
 
-          const authorNames = authorsList.map((a) => a.name).join(", ");
-          const paperTitle = entry.title
-            ? entry.title.replace(/[\n\r]/g, " ").trim()
-            : "";
-          const paperSummary = entry.summary
-            ? entry.summary.replace(/[\n\r]/g, " ").trim()
-            : "";
-
-          return {
-            id: entry.id || String(index),
-            paper: paperTitle,
-            authors: authorNames,
-            link: entry.id || "",
-            summary: paperSummary,
-          };
-        });
+      return papers.map((paper) => ({
+        id: paper.id,
+        title: paper.title,
+        authors: paper.authors,
+        link: paper.link,
+        summary: paper.summary,
+      }));
     } catch (error) {
       throw new ApiError(
-        error.message || "Failed to fetch latest arXiv papers",
+        error.message || "Failed to fetch latest papers",
         error.statusCode || 500,
       );
     }
@@ -158,7 +131,14 @@ export default class RadarService extends BaseRepository {
     }
   }
 
-  async saveRadar(workspaceId, category, alertType, newPapers) {
+  async saveRadar(
+    workspaceId,
+    category,
+    alertType,
+    newPapers,
+    papersScanned,
+    details = {},
+  ) {
     try {
       const normalizedNewPapers = (newPapers || [])
         .map((paper) => {
@@ -188,8 +168,18 @@ export default class RadarService extends BaseRepository {
         workspaceId,
         category,
         alertType,
-        papersScanned: newPapers?.length || 0,
+        papersScanned: Number.isFinite(papersScanned)
+          ? papersScanned
+          : newPapers?.length || 0,
         newPapers: normalizedNewPapers,
+        relevanceExplanation: details.relevanceExplanation || "",
+        contradictionDetail: {
+          savedPaperTitle: details?.contradictionDetail?.savedPaperTitle || "",
+          explanation: details?.contradictionDetail?.explanation || "",
+        },
+        confidence: Number.isFinite(details?.confidence)
+          ? details.confidence
+          : 0,
       });
     } catch (error) {
       throw new ApiError(
@@ -201,7 +191,7 @@ export default class RadarService extends BaseRepository {
 
   async getRadarStatus(workspaceId) {
     try {
-      return await RadarSyncLog.find({ workspaceId }).select("status -_id");
+      return await RadarSyncLog.findOne({ workspaceId }).select("status -_id");
     } catch (error) {
       throw new ApiError(
         error.message || "Failed to fetch radar status",
@@ -215,6 +205,7 @@ export default class RadarService extends BaseRepository {
       await RadarSyncLog.findOneAndUpdate(
         { workspaceId },
         { $set: { status } },
+        { upsert: true },
       );
     } catch (error) {
       throw new ApiError(

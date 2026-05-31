@@ -23,6 +23,12 @@ const radarSchema = new mongoose.Schema(
         link: { type: String, required: true },
       },
     ],
+    relevanceExplanation: { type: String, default: "" },
+    contradictionDetail: {
+      savedPaperTitle: { type: String, default: "" },
+      explanation: { type: String, default: "" },
+    },
+    confidence: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

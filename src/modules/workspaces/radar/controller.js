@@ -63,7 +63,7 @@ export default class RadarController {
       const user = req.user;
 
       const status = await radarService.getRadarStatus(workspaceId);
-      if (status.running) {
+      if (status?.status === "running") {
         return apiResponse.error(res, "Radar is already running", 409);
       }
 
@@ -98,6 +98,56 @@ export default class RadarController {
       return apiResponse.error(
         res,
         error.message || "Internal Server Error",
+        error.statusCode || 500,
+      );
+    }
+  }
+
+  static async saveNotification(req, res) {
+    try {
+      const {
+        workspaceId,
+        category,
+        alertType,
+        papersScanned,
+        newPapers,
+        relevanceExplanation,
+        contradictionDetail,
+        confidence,
+      } = req.body;
+
+      if (!workspaceId || !category || !alertType) {
+        return apiResponse.error(
+          res,
+          "workspaceId, category, and alertType are required",
+          400,
+        );
+      }
+
+      if (!Array.isArray(newPapers) || newPapers.length === 0) {
+        return apiResponse.error(res, "newPapers is required", 400);
+      }
+
+      const saved = await radarService.saveRadar(
+        workspaceId,
+        category,
+        alertType,
+        newPapers,
+        papersScanned,
+        {
+          relevanceExplanation,
+          contradictionDetail,
+          confidence,
+        },
+      );
+
+      return apiResponse.success(res, "Radar notification saved", 201, {
+        item: saved,
+      });
+    } catch (error) {
+      return apiResponse.error(
+        res,
+        error.message || "Failed to save radar notification",
         error.statusCode || 500,
       );
     }

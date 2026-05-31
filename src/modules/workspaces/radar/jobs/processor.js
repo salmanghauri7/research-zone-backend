@@ -54,15 +54,31 @@ export async function processAnalyzeJobs(job) {
   }
 
   const findings = await radarService.analyzeWithGemini(newPapers, savedPapers);
-  for (const finding of findings) {
-    if (!finding.isRelevant && !finding.hasContradiction) continue;
+  const relevantFindings = findings.filter(
+    (finding) => finding.isRelevant || finding.hasContradiction,
+  );
 
+  for (const finding of relevantFindings) {
     const alertType = finding.hasContradiction ? "contradiction" : "relevance";
+    const findingPayload = {
+      workspaceId,
+      category,
+      alertType,
+      papersScanned: newPapers.length,
+      newPapers: finding.paper ? [finding.paper] : [],
+      relevanceExplanation: finding.relevanceExplanation,
+      contradictionDetail: finding.contradictionDetail,
+      confidence: finding.confidence,
+    };
 
-    const saved = await radarService.saveRadar(workspaceId, category, alertType, newPapers);
-    io.to(workspaceId).emit("radar:finding", { finding: saved });
-    await checkAndCompleteRadar(workspaceId, totalCategories);
+    io.to(workspaceId).emit("radar:finding", { finding: findingPayload });
   }
+
+  io.to(workspaceId).emit("radar:category:done", {
+    category,
+    found: relevantFindings.length,
+  });
+  await checkAndCompleteRadar(workspaceId, totalCategories);
 }
 
 async function checkAndCompleteRadar(workspaceId, totalCategories) {
