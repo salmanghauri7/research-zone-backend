@@ -344,9 +344,7 @@ async function fetchPapersFromArxiv({
   const parser = new XMLParser({ ignoreAttributes: false });
   const jsonData = parser.parse(xmlData);
 
-  const totalResults = Number(
-    jsonData?.feed?.["opensearch:totalResults"] || 0,
-  );
+  const totalResults = Number(jsonData?.feed?.["opensearch:totalResults"] || 0);
 
   let entries = jsonData?.feed?.entry || [];
   if (!Array.isArray(entries)) {

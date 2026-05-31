@@ -72,7 +72,7 @@ export default class RadarService extends BaseRepository {
       const maxResults = 20;
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - Number(lookbackDays));
-      const fieldsOfStudy = mapArxivCategoryToFieldsOfStudy(category);
+      const fieldsOfStudy = category ? [category] : undefined;
 
       const { papers } = await fetchPapersFromSemanticScholar({
         query: category,
@@ -131,7 +131,14 @@ export default class RadarService extends BaseRepository {
     }
   }
 
-  async saveRadar(workspaceId, category, alertType, newPapers) {
+  async saveRadar(
+    workspaceId,
+    category,
+    alertType,
+    newPapers,
+    papersScanned,
+    details = {},
+  ) {
     try {
       const normalizedNewPapers = (newPapers || [])
         .map((paper) => {
@@ -161,8 +168,18 @@ export default class RadarService extends BaseRepository {
         workspaceId,
         category,
         alertType,
-        papersScanned: newPapers?.length || 0,
+        papersScanned: Number.isFinite(papersScanned)
+          ? papersScanned
+          : newPapers?.length || 0,
         newPapers: normalizedNewPapers,
+        relevanceExplanation: details.relevanceExplanation || "",
+        contradictionDetail: {
+          savedPaperTitle: details?.contradictionDetail?.savedPaperTitle || "",
+          explanation: details?.contradictionDetail?.explanation || "",
+        },
+        confidence: Number.isFinite(details?.confidence)
+          ? details.confidence
+          : 0,
       });
     } catch (error) {
       throw new ApiError(
@@ -174,7 +191,7 @@ export default class RadarService extends BaseRepository {
 
   async getRadarStatus(workspaceId) {
     try {
-      return await RadarSyncLog.find({ workspaceId }).select("status -_id");
+      return await RadarSyncLog.findOne({ workspaceId }).select("status -_id");
     } catch (error) {
       throw new ApiError(
         error.message || "Failed to fetch radar status",
@@ -188,6 +205,7 @@ export default class RadarService extends BaseRepository {
       await RadarSyncLog.findOneAndUpdate(
         { workspaceId },
         { $set: { status } },
+        { upsert: true },
       );
     } catch (error) {
       throw new ApiError(
@@ -196,40 +214,4 @@ export default class RadarService extends BaseRepository {
       );
     }
   }
-}
-
-function mapArxivCategoryToFieldsOfStudy(category) {
-  if (!category || typeof category !== "string") {
-    return undefined;
-  }
-
-  const normalized = category.trim().toLowerCase();
-
-  if (normalized.startsWith("cs.")) {
-    return ["Computer Science"];
-  }
-  if (normalized.startsWith("math.")) {
-    return ["Mathematics"];
-  }
-  if (
-    normalized.startsWith("physics.") ||
-    normalized.startsWith("cond-mat.") ||
-    normalized.startsWith("quant-ph")
-  ) {
-    return ["Physics"];
-  }
-  if (normalized.startsWith("stat.")) {
-    return ["Mathematics"];
-  }
-  if (normalized.startsWith("bio.") || normalized.startsWith("q-bio.")) {
-    return ["Biology"];
-  }
-  if (normalized.startsWith("econ.")) {
-    return ["Economics"];
-  }
-  if (normalized.startsWith("eess.")) {
-    return ["Engineering"];
-  }
-
-  return undefined;
 }
