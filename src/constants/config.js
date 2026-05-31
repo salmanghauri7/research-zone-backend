@@ -26,7 +26,7 @@ export const config = {
   EMBEDDING_SERVICE_URL_DEV: process.env.EMBEDDING_SERVICE_URL_DEV,
   EMBEDDING_SERVICE_URL_PROD: process.env.EMBEDDING_SERVICE_URL_PROD,
   GEMINI_API_KEY_FOR_FOR_RADAR: process.env.GEMINI_API_KEY_FOR_FOR_RADAR,
-  REDIS_URL: proccess.env.REDIS_URL
+  REDIS_URL: process.env.REDIS_URL
 };
 
 export const constants = {
