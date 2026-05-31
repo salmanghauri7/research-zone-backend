@@ -1,4 +1,4 @@
-import { XMLParser } from "fast-xml-parser";
+import fetchPapersFromSemanticScholar from "../../utils/fetchPapersFromSemanticScholar.js";
 
 export default class PapersService {
   async fetchArxivWithRetry(url, retries = 2) {
@@ -40,87 +40,31 @@ export default class PapersService {
       await new Promise((resolve) => setTimeout(resolve, backoffMs));
     }
 
-    throw lastError || new Error('Unknown arXiv request error');
-  }
-
-  async searchArxiv(query, page = 1, resultsPerPage = 10) {
-    if (!query || query.trim() === '') {
-      throw new Error('Search query is required');
-    }
-
     try {
       // Calculate pagination offset
-      const safePage = Number.isFinite(page) && page > 0 ? page : 1;
-      const safeResultsPerPage =
-        Number.isFinite(resultsPerPage) && resultsPerPage > 0
-          ? Math.min(resultsPerPage, 50)
-          : 10;
-      const start = (safePage - 1) * safeResultsPerPage;
-
-      // Construct the arXiv API URL with pagination
-      const arxivUrl = `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query.trim())}&start=${start}&max_results=${safeResultsPerPage}`;
-
-      // Fetch the data from arXiv
-      const response = await this.fetchArxivWithRetry(arxivUrl, 2);
-
-      const xmlData = await response.text();
-
-      // Parse the XML into JSON
-      const parser = new XMLParser({ ignoreAttributes: false });
-      const jsonData = parser.parse(xmlData);
-
-      if (!jsonData?.feed) {
-        throw new Error('Invalid response received from arXiv');
-      }
-
-      // Get total results from arXiv feed
-      const totalResults = parseInt(jsonData.feed['opensearch:totalResults']) || 0;
-
-      // Normalize entries (arXiv returns single entry as object, multiple as array)
-      let entries = jsonData.feed.entry || [];
-      if (!Array.isArray(entries)) {
-        entries = [entries];
-      }
-
-      // Format the papers data
-      const formattedPapers = entries.map((entry, index) => {
-        const safeEntry = entry || {};
-
-        // Handle authors (could be a single object or an array)
-        let authorsList = safeEntry.author || [];
-        if (!Array.isArray(authorsList)) {
-          authorsList = [authorsList];
-        }
-        const authorNames = authorsList
-          .map((author) => author?.name)
-          .filter(Boolean)
-          .join(', ');
-
-        return {
-          id: safeEntry.id || String(index),
-          title: (safeEntry.title || '').replace(/[\n\r]/g, ' ').trim(),
-          authors: authorNames || 'Unknown authors',
-          published: safeEntry.published
-            ? new Date(safeEntry.published).toISOString().split('T')[0]
-            : '',
-          summary: (safeEntry.summary || '').trim(),
-          link: safeEntry.id || '',
-        };
+      const start = (page - 1) * resultsPerPage;
+      const { papers, total } = await fetchPapersFromSemanticScholar({
+        query,
+        limit: resultsPerPage,
+        offset: start,
       });
 
       return {
-        papers: formattedPapers,
+        papers,
         pagination: {
-          currentPage: safePage,
-          resultsPerPage: safeResultsPerPage,
-          totalResults: totalResults,
-          totalPages: Math.ceil(totalResults / safeResultsPerPage),
-          hasMore: (safePage * safeResultsPerPage) < totalResults
-        }
+          currentPage: page,
+          resultsPerPage: resultsPerPage,
+          totalResults: total,
+          totalPages: Math.ceil(total / resultsPerPage),
+          hasMore: page * resultsPerPage < total,
+        },
       };
     } catch (error) {
-      console.error('arXiv fetch error:', error);
-      throw new Error(error?.message || 'Failed to fetch papers from arXiv');
+      console.error("Semantic Scholar fetch error:", error);
+      if (error?.statusCode === 429) {
+        throw error;
+      }
+      throw new Error("Failed to fetch papers from Semantic Scholar");
     }
   }
 

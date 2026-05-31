@@ -1,4 +1,3 @@
-import { XMLParser } from "fast-xml-parser";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ApiError } from "../../../utils/apiError.js";
 import BaseRepository from "../../../utils/baseRepository.js";
@@ -7,6 +6,7 @@ import RadarSyncLog from "./radarSyncModel.js";
 import { config } from "../../../constants/config.js";
 import { buildRadarPrompt } from "./radarPrompt.js";
 import { responseSchema } from "./radarPrompt.js";
+import fetchPapersFromSemanticScholar from "../../../utils/fetchPapersFromSemanticScholar.js";
 
 export default class RadarService extends BaseRepository {
   constructor(model) {
@@ -70,55 +70,28 @@ export default class RadarService extends BaseRepository {
   async fetchLatestArxivPapers(category, lookbackDays) {
     try {
       const maxResults = 20;
-      const arxivUrl = `http://export.arxiv.org/api/query?search_query=cat:${encodeURIComponent(category)}&sortBy=submittedDate&sortOrder=descending&start=0&max_results=${maxResults}`;
-      const response = await fetch(arxivUrl);
-
-      if (!response.ok) {
-        throw new ApiError("Failed to fetch from arXiv", response.status);
-      }
-
-      const xmlData = await response.text();
-      const parser = new XMLParser({ ignoreAttributes: false });
-      const jsonData = parser.parse(xmlData);
-
-      let entries = jsonData.feed?.entry || [];
-      if (!Array.isArray(entries)) {
-        entries = [entries];
-      }
-
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - Number(lookbackDays));
+      const fieldsOfStudy = mapArxivCategoryToFieldsOfStudy(category);
 
-      return entries
-        .filter((entry) => {
-          const published = new Date(entry.published);
-          return !Number.isNaN(published.getTime()) && published >= cutoffDate;
-        })
-        .map((entry, index) => {
-          let authorsList = entry.author || [];
-          if (!Array.isArray(authorsList)) {
-            authorsList = [authorsList];
-          }
+      const { papers } = await fetchPapersFromSemanticScholar({
+        query: category,
+        fieldsOfStudy,
+        limit: maxResults,
+        offset: 0,
+        publishedAfter: cutoffDate,
+      });
 
-          const authorNames = authorsList.map((a) => a.name).join(", ");
-          const paperTitle = entry.title
-            ? entry.title.replace(/[\n\r]/g, " ").trim()
-            : "";
-          const paperSummary = entry.summary
-            ? entry.summary.replace(/[\n\r]/g, " ").trim()
-            : "";
-
-          return {
-            id: entry.id || String(index),
-            paper: paperTitle,
-            authors: authorNames,
-            link: entry.id || "",
-            summary: paperSummary,
-          };
-        });
+      return papers.map((paper) => ({
+        id: paper.id,
+        title: paper.title,
+        authors: paper.authors,
+        link: paper.link,
+        summary: paper.summary,
+      }));
     } catch (error) {
       throw new ApiError(
-        error.message || "Failed to fetch latest arXiv papers",
+        error.message || "Failed to fetch latest papers",
         error.statusCode || 500,
       );
     }
@@ -223,4 +196,40 @@ export default class RadarService extends BaseRepository {
       );
     }
   }
+}
+
+function mapArxivCategoryToFieldsOfStudy(category) {
+  if (!category || typeof category !== "string") {
+    return undefined;
+  }
+
+  const normalized = category.trim().toLowerCase();
+
+  if (normalized.startsWith("cs.")) {
+    return ["Computer Science"];
+  }
+  if (normalized.startsWith("math.")) {
+    return ["Mathematics"];
+  }
+  if (
+    normalized.startsWith("physics.") ||
+    normalized.startsWith("cond-mat.") ||
+    normalized.startsWith("quant-ph")
+  ) {
+    return ["Physics"];
+  }
+  if (normalized.startsWith("stat.")) {
+    return ["Mathematics"];
+  }
+  if (normalized.startsWith("bio.") || normalized.startsWith("q-bio.")) {
+    return ["Biology"];
+  }
+  if (normalized.startsWith("econ.")) {
+    return ["Economics"];
+  }
+  if (normalized.startsWith("eess.")) {
+    return ["Engineering"];
+  }
+
+  return undefined;
 }
