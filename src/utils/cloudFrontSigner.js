@@ -7,7 +7,7 @@ import { config } from "../constants/config.js";
  * @returns {Object} Signed cookies object with Policy, Signature, and Key-Pair-Id
  */
 export const generateCloudFrontSignedCookies = (
-  expirationTime = 3600000 // 1 hour in milliseconds
+  expirationTime = 3600000, // 1 hour in milliseconds
 ) => {
   const cloudFrontDomain = config.CLOUDFRONT_DOMAIN;
   const privateKey = config.CLOUDFRONT_PRIVATE_KEY;
@@ -15,7 +15,7 @@ export const generateCloudFrontSignedCookies = (
 
   if (!cloudFrontDomain || !privateKey || !keyPairId) {
     throw new Error(
-      "CloudFront configuration is missing. Ensure CLOUDFRONT_DOMAIN, CLOUDFRONT_PRIVATE_KEY, and CLOUDFRONT_KEY_PAIR_ID are set."
+      "CloudFront configuration is missing. Ensure CLOUDFRONT_DOMAIN, CLOUDFRONT_PRIVATE_KEY, and CLOUDFRONT_KEY_PAIR_ID are set.",
     );
   }
 
@@ -71,11 +71,11 @@ export const generateCloudFrontUrl = (fileKey) => {
 export const setCloudFrontCookies = (
   res,
   cookies,
-  maxAge = 3600000 // 1 hour in milliseconds
+  maxAge = 3600000, // 1 hour in milliseconds
 ) => {
   const cookieOptions = {
     httpOnly: true,
-    secure: config.NODE_ENV === "production" ? true : false,
+    secure: true,
     sameSite: "none",
     maxAge: maxAge,
     path: "/",
@@ -85,11 +85,11 @@ export const setCloudFrontCookies = (
   res.cookie(
     "CloudFront-Signature",
     cookies["CloudFront-Signature"],
-    cookieOptions
+    cookieOptions,
   );
   res.cookie(
     "CloudFront-Key-Pair-Id",
     cookies["CloudFront-Key-Pair-Id"],
-    cookieOptions
+    cookieOptions,
   );
 };

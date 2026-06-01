@@ -184,7 +184,7 @@ export default class userservices extends BaseRepository {
     res.cookie("authCookie", token, {
       httpOnly: true,
       sameSite: "none",
-      secure: config.NODE_ENV === "production" ? true : false,
+      secure: true,
       path: "/",
       maxAge: maxAge,
     });
