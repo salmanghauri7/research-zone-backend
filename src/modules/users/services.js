@@ -183,10 +183,10 @@ export default class userservices extends BaseRepository {
   async sendCookie(res, token, maxAge) {
     res.cookie("authCookie", token, {
       httpOnly: true,
-      sameSite: "lax", // allow cross-site
+      sameSite: "none",
       secure: config.NODE_ENV === "production" ? true : false,
       path: "/",
-      maxAge: maxAge, // 7 days
+      maxAge: maxAge,
     });
   }
 

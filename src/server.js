@@ -76,7 +76,6 @@ const startServer = async () => {
         },
       }),
     );
-    console.log(`🚀 GraphQL endpoint ready at http://localhost:${PORT}/graphql`);
 
     // Initialize Socket.IO AFTER config is loaded
     const io = initializeSocket(httpServer);
@@ -85,8 +84,6 @@ const startServer = async () => {
     await import("./modules/workspaces/radar/jobs/worker.radar.js");
 
     httpServer.listen(PORT, () => {
-      console.log(`✅ Server is connected http://localhost:${PORT}`);
-      console.log(`🔌 Socket.IO is ready for connections`);
     });
   } catch (error) {
     console.error("Failed to connect to the database:", error);

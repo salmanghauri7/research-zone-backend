@@ -75,8 +75,8 @@ export const setCloudFrontCookies = (
 ) => {
   const cookieOptions = {
     httpOnly: true,
-    secure: config.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: config.NODE_ENV === "production" ? true : false,
+    sameSite: "none",
     maxAge: maxAge,
     path: "/",
   };
