@@ -187,6 +187,7 @@ export default class userservices extends BaseRepository {
       secure: true,
       path: "/",
       maxAge: maxAge,
+      partitioned: config.NODE_ENV === "production" ? true : false,
     });
   }
 

@@ -79,6 +79,7 @@ export const setCloudFrontCookies = (
     sameSite: "none",
     maxAge: maxAge,
     path: "/",
+    partitioned: config.NODE_ENV === "production" ? true : false,
   };
 
   res.cookie("CloudFront-Policy", cookies["CloudFront-Policy"], cookieOptions);
