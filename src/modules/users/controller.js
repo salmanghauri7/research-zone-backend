@@ -141,10 +141,8 @@ export default class userController {
 
   static async logout(req, res) {
     try {
-      const refreshToken = req.cookies.authCookie;
-
       await userDb.clearCookie(res, "authCookie");
-      clearCloudFrontCookies(res);
+      
 
       return apiResponse.success(res, "Logged out successfully", 200);
     } catch (err) {
