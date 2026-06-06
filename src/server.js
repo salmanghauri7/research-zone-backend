@@ -43,7 +43,7 @@ app.use(cookieParser());
 
 routes(app);
 
-// to handle global errors
+
 app.use(globalError);
 
 const PORT = config.PORT || 5000;
@@ -77,7 +77,6 @@ const startServer = async () => {
       }),
     );
 
-    // Initialize Socket.IO AFTER config is loaded
     const io = initializeSocket(httpServer);
     registerChatHandlers(io);
 

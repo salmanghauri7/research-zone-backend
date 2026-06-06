@@ -22,6 +22,7 @@ router.post(
   userController.verifyOtp,
 );
 router.post("/login", formValidation(loginSchema), userController.login);
+router.post("/logout", userController.logout);
 router.get("/refresh", userController.refresh);
 
 // OAuth routes

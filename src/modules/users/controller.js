@@ -18,7 +18,7 @@ const workspaceDb = new userservices(Workspace);
 const client = new OAuth2Client(
   config.GOOGLE_CLIENT_ID,
   config.GOOGLE_CLIENT_SECRET,
-  "http://localhost:3000"
+  "http://localhost:3000",
 );
 
 export default class userController {
@@ -31,7 +31,7 @@ export default class userController {
 
       const token = generateJWT(
         { email: user.email, firstName: user.firstName },
-        { expiresIn: "20m" }
+        { expiresIn: "20m" },
       );
 
       return apiResponse.success(
@@ -40,13 +40,13 @@ export default class userController {
         200,
         {
           token: token,
-        }
+        },
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.USER.SIGNUP_ERROR,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
@@ -78,7 +78,7 @@ export default class userController {
       return apiResponse.error(
         res,
         err.message || errorMessages.USER.OTP_VERIFICATION_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
@@ -89,13 +89,13 @@ export default class userController {
       return apiResponse.success(
         res,
         successMessages.USER.OTP_RESENT_SUCCESS,
-        200
+        200,
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.USER.OTP_RESEND_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
@@ -133,7 +133,31 @@ export default class userController {
       return apiResponse.error(
         res,
         err.message || errorMessages.USER.LOGIN_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
+      );
+    }
+  }
+
+  static async logout(req, res) {
+    try {
+      const refreshToken = req.cookies.authCookie;
+
+      res.clearCookie("authCookie", {
+        httpOnly: true,
+        sameSite: "none",
+        secure: true,
+        path: "/",
+      });
+      res.clearCookie("CloudFront-Policy", { path: "/" });
+      res.clearCookie("CloudFront-Signature", { path: "/" });
+      res.clearCookie("CloudFront-Key-Pair-Id", { path: "/" });
+
+      return apiResponse.success(res, "Logged out successfully", 200);
+    } catch (err) {
+      return apiResponse.error(
+        res,
+        err.message || "Logout failed",
+        err.statusCode || 500,
       );
     }
   }
@@ -155,13 +179,13 @@ export default class userController {
         200,
         {
           accessToken,
-        }
+        },
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.USER.REFRESH_FAILED,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
@@ -237,7 +261,7 @@ export default class userController {
       return apiResponse.error(
         res,
         error.message || errorMessages.USER.SIGNUP_GOOGLE_FAILED,
-        error.statusCode || 500
+        error.statusCode || 500,
       );
     }
   }
@@ -259,7 +283,7 @@ export default class userController {
           {
             username: username,
             available: true,
-          }
+          },
         );
       }
 
@@ -270,7 +294,7 @@ export default class userController {
         {
           username: username,
           available: false,
-        }
+        },
       );
     } catch (err) {
       return apiResponse.error(res, err.message, err.statusCode || 500);
@@ -310,13 +334,13 @@ export default class userController {
         {
           id: updatedUser._id,
           username: updatedUser.username,
-        }
+        },
       );
     } catch (err) {
       return apiResponse.error(
         res,
         err.message || errorMessages.USER.USERNAME_NOT_AVAILABLE,
-        err.statusCode || 500
+        err.statusCode || 500,
       );
     }
   }
