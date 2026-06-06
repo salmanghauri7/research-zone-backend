@@ -79,7 +79,6 @@ export const setCloudFrontCookies = (
     sameSite: "none",
     maxAge: maxAge,
     path: "/",
-    partitioned: config.NODE_ENV === "production" ? true : false,
   };
 
   res.cookie("CloudFront-Policy", cookies["CloudFront-Policy"], cookieOptions);
@@ -93,4 +92,17 @@ export const setCloudFrontCookies = (
     cookies["CloudFront-Key-Pair-Id"],
     cookieOptions,
   );
+};
+
+export const clearCloudFrontCookies = (res) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+  };
+
+  res.clearCookie("CloudFront-Policy", cookieOptions);
+  res.clearCookie("CloudFront-Signature", cookieOptions);
+  res.clearCookie("CloudFront-Key-Pair-Id", cookieOptions);
 };

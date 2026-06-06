@@ -9,6 +9,7 @@ import userservices from "./services.js";
 import { config } from "../../constants/config.js";
 import { ApiError } from "../../utils/apiError.js";
 import {
+  clearCloudFrontCookies,
   generateCloudFrontSignedCookies,
   setCloudFrontCookies,
 } from "../../utils/cloudFrontSigner.js";
@@ -142,15 +143,8 @@ export default class userController {
     try {
       const refreshToken = req.cookies.authCookie;
 
-      res.clearCookie("authCookie", {
-        httpOnly: true,
-        sameSite: "none",
-        secure: true,
-        path: "/",
-      });
-      res.clearCookie("CloudFront-Policy", { path: "/" });
-      res.clearCookie("CloudFront-Signature", { path: "/" });
-      res.clearCookie("CloudFront-Key-Pair-Id", { path: "/" });
+      await userDb.clearCookie(res, "authCookie");
+      clearCloudFrontCookies(res);
 
       return apiResponse.success(res, "Logged out successfully", 200);
     } catch (err) {
